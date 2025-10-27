@@ -40,19 +40,18 @@ jobs:
       # Windows - setup vcpkg
       - name: Setup vcpkg (Windows)
         if: runner.os == 'Windows'
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: 'c8696863d371ab7f46545af3f11be2dcec6d8ace'
+        run: |
+          choco install cmake --no-progress -y
+          refreshenv
 
       - name: Install vcpkg packages (Windows)
         if: runner.os == 'Windows'
-        run: |
-          vcpkg install sdl3:x64-windows
-          vcpkg install sdl3-image:x64-windows
-          vcpkg install spdlog:x64-windows
-          vcpkg install fmt:x64-windows
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+        uses: johnwason/vcpkg-action@v7
+        id: vcpkg
+        with:
+          pkgs: sdl3 sdl3-image spdlog fmt
+          triplet: x64-windows-static
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Configure and Build
       - name: Configure CMake (Linux)
@@ -66,14 +65,10 @@ jobs:
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
         run: |
-          cmake -B build `
-            -G "Visual Studio 17 2022" -A x64 `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DENABLE_CONSOLE_LOG=ON `
-            -DLOG_LEVEL=INFO `
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} \
+            -S . -B build `
+            -DENABLE_CONSOLE_LOG=ON`
+            -DLOG_LEVEL=INFO
 
       - name: Build
         run: cmake --build build --config Release

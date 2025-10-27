@@ -88,35 +88,31 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
+      - name: Cache vcpkg
+        uses: actions/cache@v4
         with:
-          vcpkgGitCommitId: 'c8696863d371ab7f46545af3f11be2dcec6d8ace'
-          vcpkgJsonGlob: 'vcpkg.json'
+          path: ${{ github.workspace }}/vcpkg
+          key: ${{ runner.os }}-vcpkgcmd
 
-      - name: Install vcpkg packages
+      - name: Setup Environment
         run: |
-          vcpkg install sdl3:x64-windows
-          vcpkg install sdl3-image:x64-windows
-          vcpkg install spdlog:x64-windows
-          vcpkg install fmt:x64-windows
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          choco install cmake --no-progress -y
+          refreshenv
+
+      - name: vcpkg build
+        uses: johnwason/vcpkg-action@v7
+        id: vcpkg
+        with:
+          pkgs: sdl3 sdl3-image spdlog fmt
+          triplet: x64-windows-static
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure CMake
         run: |
-          cmake -B build `
-            -G "Visual Studio 17 2022" `
-            -A x64 `
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} `
+            -S . -B build `
             -DENABLE_CONSOLE_LOG=${{ matrix.console_log }} `
-            -DLOG_LEVEL=${{ matrix.log_level }} `
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+            -DLOG_LEVEL=${{ matrix.log_level }}
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }} -j
