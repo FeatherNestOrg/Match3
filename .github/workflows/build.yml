@@ -221,10 +221,96 @@ jobs:
           retention-days: 7
 
   # ============================================================================
+  # Android APK Build (builds APK from native .so libraries)
+  # ============================================================================
+  build-android-apk:
+    runs-on: ubuntu-latest
+    needs: build-android
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools-version: "34.0.0"
+
+      - name: Download all Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract .so files and prepare Android project
+        run: |
+          # Create jniLibs directory structure
+          mkdir -p android/app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86,x86_64}
+
+          # Extract and copy .so files for each ABI
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            artifact_dir="artifacts/match-3-android-${abi}-Release-logINFO"
+            if [ -d "$artifact_dir" ]; then
+              echo "Processing $abi..."
+              # Find the tarball
+              tar_file=$(find "$artifact_dir" -name "*.tar.gz" -type f)
+              if [ -f "$tar_file" ]; then
+                echo "Found tarball: $tar_file"
+                # Extract and copy .so file
+                tar xzf "$tar_file" -C /tmp/
+                find /tmp -name "libMatch3.so" -exec cp {} android/app/src/main/jniLibs/$abi/ \;
+              fi
+            fi
+          done
+
+          # List prepared libraries
+          echo "Prepared native libraries:"
+          find android/app/src/main/jniLibs -name "*.so" -type f
+
+      - name: Copy game assets to Android
+        run: |
+          # Copy resources if they exist
+          if [ -d "resources" ]; then
+            mkdir -p android/app/src/main/assets
+            cp -r resources/* android/app/src/main/assets/ 2>/dev/null || true
+          fi
+
+      - name: Setup Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Sign APK (optional - for testing)
+        run: |
+          # Create keystore for testing (should use proper signing for production)
+          cd android/app/build/outputs/apk/release
+          ls -lh *.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Match3-Android-APK-Release
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 7
+
+  # ============================================================================
   # Create Release (on tags)
   # ============================================================================
   create-release:
-    needs: [build-linux, build-windows, build-android]
+    needs: [build-linux, build-windows, build-android, build-android-apk]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
