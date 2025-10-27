@@ -6,6 +6,9 @@
 
 namespace Match3
 {
+    class Renderer;
+    class ResourceManager;
+
     /**
      * @brief 游戏主类 - 负责游戏循环和核心系统管理
      */
@@ -62,13 +65,21 @@ namespace Match3
          */
         void UpdateFPS(float deltaTime);
 
+        /**
+         * @brief 初始化渲染资源
+         */
+        bool InitializeRenderResources();
+
     private:
         std::string m_title;
         int m_windowWidth;
         int m_windowHeight;
 
         SDL_Window* m_window;
-        SDL_Renderer* m_renderer;
+        SDL_Renderer* m_sdlRenderer;
+
+        std::unique_ptr<Renderer> m_renderer;
+        std::unique_ptr<ResourceManager> m_resourceManager;
 
         bool m_isRunning;
         bool m_isPaused;
