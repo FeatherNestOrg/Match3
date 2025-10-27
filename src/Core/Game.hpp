@@ -12,7 +12,7 @@ namespace Match3
     class Game
     {
     public:
-        Game(const std::string& title, int width, int height);
+        Game(std::string title, int width, int height);
         ~Game();
 
         // 禁止拷贝

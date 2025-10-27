@@ -1,11 +1,13 @@
 #include "Game.hpp"
-#include <spdlog/spdlog.h>
+#include "Logger.hpp"
 #include <SDL3/SDL_timer.h>
+
+#include <utility>
 
 namespace Match3
 {
-    Game::Game(const std::string& title, int width, int height)
-        : m_title(title)
+    Game::Game(std::string title, const int width, const int height)
+        : m_title(std::move(title))
           , m_windowWidth(width)
           , m_windowHeight(height)
           , m_window(nullptr)
@@ -25,12 +27,12 @@ namespace Match3
 
     bool Game::Initialize()
     {
-        spdlog::info("Initializing Match-3 Game...");
+        LOG_INFO("Initializing Match-3 Game...");
 
         // 初始化 SDL
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
         {
-            spdlog::error("SDL initialization failed: {}", SDL_GetError());
+            LOG_ERROR("SDL initialization failed: {}", SDL_GetError());
             return false;
         }
 
@@ -43,24 +45,24 @@ namespace Match3
             &m_window,
             &m_renderer))
         {
-            spdlog::error("Window/Renderer creation failed: {}", SDL_GetError());
+            LOG_ERROR("Window/Renderer creation failed: {}", SDL_GetError());
             return false;
         }
 
-        spdlog::info("Window created: {}x{}", m_windowWidth, m_windowHeight);
+        LOG_INFO("Window created: {}x{}", m_windowWidth, m_windowHeight);
 
         // 设置渲染器混合模式
         SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
 
         m_isRunning = true;
-        spdlog::info("Game initialized successfully!");
+        LOG_INFO("Game initialized successfully!");
 
         return true;
     }
 
     void Game::Run()
     {
-        spdlog::info("Starting game loop...");
+        LOG_INFO("Starting game loop...");
 
         Uint64 lastTime = SDL_GetTicksNS();
         float accumulator = 0.0f;
@@ -69,7 +71,7 @@ namespace Match3
         {
             // 计算 delta time
             Uint64 currentTime = SDL_GetTicksNS();
-            float deltaTime = (currentTime - lastTime) / 1000000000.0f; // 转换为秒
+            float deltaTime = static_cast<float>(currentTime - lastTime) / 1000000000.0f; // 转换为秒
             lastTime = currentTime;
 
             // 限制最大 delta time（避免螺旋死亡）
@@ -103,12 +105,12 @@ namespace Match3
             SDL_Delay(1);
         }
 
-        spdlog::info("Game loop ended");
+        LOG_INFO("Game loop ended");
     }
 
     void Game::Shutdown()
     {
-        spdlog::info("Shutting down game...");
+        LOG_INFO("Shutting down game...");
 
         if (m_renderer)
         {
@@ -123,7 +125,7 @@ namespace Match3
         }
 
         SDL_Quit();
-        spdlog::info("Game shutdown complete");
+        LOG_INFO("Game shutdown complete");
     }
 
     void Game::HandleEvents()
@@ -134,27 +136,27 @@ namespace Match3
             switch (event.type)
             {
             case SDL_EVENT_QUIT:
-                spdlog::info("Quit event received");
+                LOG_INFO("Quit event received");
                 m_isRunning = false;
                 break;
 
             case SDL_EVENT_KEY_DOWN:
                 if (event.key.key == SDLK_ESCAPE)
                 {
-                    spdlog::info("ESC pressed - exiting game");
+                    LOG_INFO("ESC pressed - exiting game");
                     m_isRunning = false;
                 }
                 else if (event.key.key == SDLK_SPACE)
                 {
                     m_isPaused = !m_isPaused;
-                    spdlog::info("Game {}", m_isPaused ? "paused" : "resumed");
+                    LOG_INFO("Game {}", m_isPaused ? "paused" : "resumed");
                 }
                 break;
 
             case SDL_EVENT_WINDOW_RESIZED:
                 m_windowWidth = event.window.data1;
                 m_windowHeight = event.window.data2;
-                spdlog::info("Window resized: {}x{}", m_windowWidth, m_windowHeight);
+                LOG_INFO("Window resized: {}x{}", m_windowWidth, m_windowHeight);
                 break;
             default: break;
             }
@@ -212,10 +214,8 @@ namespace Match3
         {
             m_fps = m_frameCount / m_frameTimeAccumulator;
 
-#ifdef TEH_ENABLE_CONSOLE_LOG
-            spdlog::debug("FPS: {:.1f} | Frame Time: {:.2f}ms",
-                          m_fps, (m_frameTimeAccumulator / m_frameCount) * 1000.0f);
-#endif
+            LOG_DEBUG("FPS: {:.1f} | Frame Time: {:.2f}ms",
+                      m_fps, (m_frameTimeAccumulator / m_frameCount) * 1000.0f);
 
             m_frameTimeAccumulator = 0.0f;
             m_frameCount = 0;
