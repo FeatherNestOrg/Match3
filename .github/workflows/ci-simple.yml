@@ -35,7 +35,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build pkg-config \
             libx11-dev libxext-dev libwayland-dev libxkbcommon-dev \
-            libegl1-mesa-dev libibus-1.0-dev libdbus-1-dev
+            libegl1-mesa-dev libibus-1.0-dev libdbus-1-dev \
+            libfmt-dev 
 
       # Windows - setup vcpkg
       - name: Setup CMake (Windows)
@@ -70,6 +71,7 @@ jobs:
         run: |
           cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} `
             -S . -B build `
+            -DCMAKE_BUILD_TYPE=Release ` 
             -DENABLE_CONSOLE_LOG=ON `
             -DLOG_LEVEL=INFO `
             -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
