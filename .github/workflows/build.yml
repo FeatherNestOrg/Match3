@@ -1,6 +1,8 @@
 name: Multi-Platform Build
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -256,11 +258,15 @@ jobs:
           mkdir -p android/app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86,x86_64}
 
           # Extract and copy .so files for each ABI
+          # Create a single extraction directory for all ABIs
+          extract_dir=$(mktemp -d)
+          trap "rm -rf $extract_dir" EXIT
+
           for abi in arm64-v8a armeabi-v7a x86 x86_64; do
             artifact_dir="artifacts/match-3-android-${abi}-Release-logINFO"
             if [ -d "$artifact_dir" ]; then
               echo "Processing $abi..."
-              
+
               # Find the tarball (more reliable method)
               tar_file=""
               for f in "$artifact_dir"/*.tar.gz; do
@@ -269,17 +275,15 @@ jobs:
                   break
                 fi
               done
-              
+
               if [ -n "$tar_file" ]; then
                 echo "Found tarball: $tar_file"
-                
-                # Create temporary extraction directory
-                extract_dir=$(mktemp -d)
-                trap "rm -rf $extract_dir" EXIT
-                
+
+                # Clean extraction directory before each extraction
+                rm -rf "$extract_dir"/*
                 # Extract the tarball to temp directory
                 tar xzf "$tar_file" -C "$extract_dir"
-                
+
                 # Find and copy the .so file directly from extracted content
                 so_file=$(find "$extract_dir" -type f -name "libMatch3.so" 2>/dev/null | head -1)
                 if [ -n "$so_file" ] && [ -f "$so_file" ]; then
@@ -294,6 +298,8 @@ jobs:
               fi
             else
               echo "⚠ Warning: Artifact directory not found: $artifact_dir"
+            fi
+          done
             fi
           done
 
