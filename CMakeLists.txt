@@ -19,6 +19,10 @@ add_subdirectory(src)
 # ============================================================================
 # CPack Configuration - for creating distributable packages
 # ============================================================================
+
+# Set the install destination for system libraries to root directory
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ".")
+
 include(InstallRequiredSystemLibraries)
 
 set(CPACK_PACKAGE_NAME "Match3")

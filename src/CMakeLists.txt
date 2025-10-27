@@ -45,18 +45,40 @@ if (ANDROID)
             ARCHIVE DESTINATION lib
     )
 else ()
-    # For desktop platforms, install the executable
+    # For desktop platforms, install everything to root directory
+    # This creates a flat structure: Match3-x.x.x/Match3.exe + DLLs + resources/
     install(TARGETS ${PROJECT_NAME}
-            RUNTIME DESTINATION bin
+            RUNTIME DESTINATION .
             BUNDLE DESTINATION .
     )
 
+    # Install runtime DLLs to root directory (same as executable)
+    # This includes DLLs from target dependencies
     install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-            DESTINATION bin
+            DESTINATION .
             OPTIONAL
     )
+
+    # For Windows with vcpkg, also install DLLs from the build directory
+    # This catches dependencies like freetyped.dll, brotli, etc.
+    if (WIN32 AND CMAKE_BUILD_TYPE MATCHES Debug)
+        install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
+                DESTINATION .
+                FILES_MATCHING PATTERN "*.dll"
+                PATTERN "CMakeFiles" EXCLUDE
+                PATTERN ".log" EXCLUDE
+        )
+    elseif (WIN32)
+        install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
+                DESTINATION .
+                FILES_MATCHING PATTERN "*.dll"
+                PATTERN "CMakeFiles" EXCLUDE
+                PATTERN ".log" EXCLUDE
+        )
+    endif ()
 endif ()
 
+# Create resource subdirectories
 install(DIRECTORY DESTINATION resources/textures)
 install(DIRECTORY DESTINATION resources/sounds)
 install(DIRECTORY DESTINATION resources/data)
