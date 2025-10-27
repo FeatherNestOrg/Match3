@@ -61,33 +61,30 @@ else ()
 
     # For Windows with vcpkg, also install DLLs from the build directory
     # This catches dependencies like freetyped.dll, brotli, etc.
-    if (WIN32 AND CMAKE_BUILD_TYPE MATCHES Debug)
-        install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
-                DESTINATION .
-                FILES_MATCHING PATTERN "*.dll"
-                PATTERN "CMakeFiles" EXCLUDE
-                PATTERN ".log" EXCLUDE
-        )
-    elseif (WIN32)
-        install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/"
-                DESTINATION .
-                FILES_MATCHING PATTERN "*.dll"
-                PATTERN "CMakeFiles" EXCLUDE
-                PATTERN ".log" EXCLUDE
-        )
+    if (WIN32)
+        # Install DLLs dynamically at install time
+        install(CODE "
+            file(GLOB DLL_FILES \"${CMAKE_CURRENT_BINARY_DIR}/*.dll\")
+            if(DLL_FILES)
+                file(INSTALL \${DLL_FILES} DESTINATION \"\${CMAKE_INSTALL_PREFIX}\")
+            endif()
+        ")
     endif ()
 endif ()
 
-# Create resource subdirectories
-install(DIRECTORY DESTINATION resources/textures)
-install(DIRECTORY DESTINATION resources/sounds)
-install(DIRECTORY DESTINATION resources/data)
-install(DIRECTORY DESTINATION resources/fonts)
-
-# Install any existing resources (if present)
+# Install resources (only if they exist and contain files)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../resources")
     install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../resources/"
             DESTINATION resources
-            OPTIONAL
+            FILES_MATCHING
+            PATTERN "*.ttf"
+            PATTERN "*.png"
+            PATTERN "*.jpg"
+            PATTERN "*.wav"
+            PATTERN "*.ogg"
+            PATTERN "*.mp3"
+            PATTERN "*.json"
+            PATTERN "*.xml"
+            PATTERN ".gitkeep" EXCLUDE
     )
 endif ()

@@ -248,6 +248,11 @@ jobs:
           api-level: 34
           build-tools-version: "34.0.0"
 
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: "8.4"
+
       - name: Download all Android artifacts
         uses: actions/download-artifact@v4
         with:
@@ -319,14 +324,10 @@ jobs:
             cp -r resources/* android/app/src/main/assets/ 2>/dev/null || true
           fi
 
-      - name: Setup Gradle
-        run: |
-          cd android
-          chmod +x gradlew
-
       - name: Build APK
         run: |
           cd android
+          chmod +x gradlew
           ./gradlew assembleRelease
 
       - name: Sign APK (optional - for testing)
