@@ -4,6 +4,8 @@
 #include "Render/Renderer.hpp"
 #include "Render/ResourceManager.hpp"
 #include "Game/GameState.hpp"
+#include "Input/InputManager.hpp"
+#include "Input/MouseHandler.hpp"
 #include <SDL3/SDL_timer.h>
 
 #include <utility>
@@ -60,6 +62,9 @@ namespace Match3
 
         // 创建渲染系统
         m_renderer = std::make_unique<Renderer>(m_sdlRenderer);
+        // 创建输入管理器
+        m_inputManager = std::make_unique<InputManager>();
+
         m_resourceManager = std::make_unique<ResourceManager>(m_sdlRenderer);
 
         // 初始化渲染资源
@@ -77,6 +82,8 @@ namespace Match3
             return false;
         }
 
+        // 设置输入回调
+        SetupInputCallbacks();
 
         m_isRunning = true;
         LOG_INFO("Game initialized successfully!");
@@ -162,6 +169,7 @@ namespace Match3
 
         // 清理资源
         m_gameState.reset();
+        m_inputManager.reset();
         m_resourceManager.reset();
         m_renderer.reset();
 
@@ -186,47 +194,18 @@ namespace Match3
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
+            // 传递事件给输入管理器
+            if (m_inputManager)
+            {
+                m_inputManager->HandleEvent(event);
+            }
+
+            // 处理系统事件
             switch (event.type)
             {
             case SDL_EVENT_QUIT:
                 LOG_INFO("Quit event received");
                 m_isRunning = false;
-                break;
-
-            case SDL_EVENT_KEY_DOWN:
-                if (event.key.key == SDLK_ESCAPE)
-                {
-                    LOG_INFO("ESC pressed - exiting game");
-                    m_isRunning = false;
-                }
-                else if (event.key.key == SDLK_SPACE)
-                {
-                    m_isPaused = !m_isPaused;
-                    LOG_INFO("Game {}", m_isPaused ? "paused" : "resumed");
-                }
-                else if (event.key.key == SDLK_R)
-                {
-                    LOG_INFO("Restarting game...");
-                    m_gameState->Reset();
-                }
-                break;
-
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (event.button.button == SDL_BUTTON_LEFT && !m_isPaused)
-                {
-                    // 计算点击的棋盘位置
-                    const int mouseX = static_cast<int>(event.button.x);
-                    const int mouseY = static_cast<int>(event.button.y);
-
-                    const int col = (mouseX - Config::BOARD_OFFSET_X) / Config::GEM_SIZE;
-                    const int row = (mouseY - Config::BOARD_OFFSET_Y) / Config::GEM_SIZE;
-
-                    // 检查是否在棋盘范围内
-                    if (row >= 0 && row < Config::BOARD_ROWS && col >= 0 && col < Config::BOARD_COLS)
-                    {
-                        m_gameState->HandleClick(row, col);
-                    }
-                }
                 break;
 
             case SDL_EVENT_WINDOW_RESIZED:
@@ -243,6 +222,12 @@ namespace Match3
 
     void Game::Update(const float deltaTime)
     {
+        // 更新输入管理器
+        if (m_inputManager)
+        {
+            m_inputManager->Update();
+        }
+
         // 更新游戏状态
         if (m_gameState)
         {
@@ -340,6 +325,53 @@ namespace Match3
 
         // 显示渲染结果
         m_renderer->Present();
+    }
+
+    void Game::SetupInputCallbacks()
+    {
+        // 设置鼠标点击回调
+        m_inputManager->SetMouseClickCallback(
+            [this](int x, int y, InputManager::MouseButton button)
+            {
+                if (button == InputManager::MouseButton::Left && !m_isPaused)
+                {
+                    // 使用 MouseHandler 转换坐标
+                    auto boardPos = MouseHandler::ScreenToBoard(x, y);
+                    if (boardPos.has_value())
+                    {
+                        auto [row, col] = boardPos.value();
+                        m_gameState->HandleClick(row, col);
+                        LOG_DEBUG("Click at board position: ({}, {})", row, col);
+                    }
+                }
+            });
+
+        // 设置键盘按下回调
+        m_inputManager->SetKeyDownCallback(
+            [this](SDL_Keycode key)
+            {
+                if (key == SDLK_ESCAPE)
+                {
+                    LOG_INFO("ESC pressed - exiting game");
+                    m_isRunning = false;
+                }
+                else if (key == SDLK_SPACE)
+                {
+                    m_isPaused = !m_isPaused;
+                    LOG_INFO("Game {}", m_isPaused ? "paused" : "resumed");
+                }
+                else if (key == SDLK_R)
+                {
+                    LOG_INFO("Restarting game...");
+                    m_gameState->Reset();
+                }
+                else if (key == SDLK_H)
+                {
+                    // 显示提示
+                    LOG_INFO("Hint requested");
+                    // TODO: 实现提示功能
+                }
+            });
     }
 
     void Game::UpdateFPS(float deltaTime)

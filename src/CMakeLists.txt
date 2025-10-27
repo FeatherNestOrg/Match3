@@ -9,6 +9,8 @@ add_executable(${PROJECT_NAME}
         Game/Board.cpp
         Game/MatchDetector.cpp
         Game/GameState.cpp
+        Input/InputManager.cpp
+        Input/MouseHandler.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src")

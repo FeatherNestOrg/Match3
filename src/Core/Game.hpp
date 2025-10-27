@@ -9,6 +9,7 @@ namespace Match3
     class Renderer;
     class ResourceManager;
     class GameState;
+    class InputManager;
 
     /**
      * @brief 游戏主类 - 负责游戏循环和核心系统管理
@@ -71,6 +72,11 @@ namespace Match3
          */
         bool InitializeRenderResources();
 
+        /**
+         * @brief 设置输入回调
+         */
+        void SetupInputCallbacks();
+
     private:
         std::string m_title;
         int m_windowWidth;
@@ -82,6 +88,7 @@ namespace Match3
         std::unique_ptr<Renderer> m_renderer;
         std::unique_ptr<GameState> m_gameState;
         std::unique_ptr<ResourceManager> m_resourceManager;
+        std::unique_ptr<InputManager> m_inputManager;
 
         bool m_isRunning;
         bool m_isPaused;
