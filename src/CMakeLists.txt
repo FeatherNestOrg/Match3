@@ -13,6 +13,7 @@ endif ()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
+        SDL3_ttf::SDL3_ttf
         unordered_dense::unordered_dense
         spdlog::spdlog
         EnTT::EnTT
@@ -36,6 +37,7 @@ install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
 install(DIRECTORY DESTINATION resources/textures)
 install(DIRECTORY DESTINATION resources/sounds)
 install(DIRECTORY DESTINATION resources/data)
+install(DIRECTORY DESTINATION resources/fonts)
 
 # Install any existing resources (if present)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../resources")

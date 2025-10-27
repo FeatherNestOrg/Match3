@@ -3,9 +3,14 @@
 #include "Logger.hpp"
 #include "Render/Renderer.hpp"
 #include "Render/ResourceManager.hpp"
+#include "Render/FontRenderer.hpp"
 #include "Managers/GameStateManager.hpp"
 #include "Input/InputManager.hpp"
 #include "Input/MouseHandler.hpp"
+#include "UI/UIManager.hpp"
+#include "UI/Components/Label.hpp"
+#include "UI/Components/Button.hpp"
+#include "UI/Components/Panel.hpp"
 #include <SDL3/SDL_timer.h>
 
 #include <utility>
@@ -78,6 +83,39 @@ namespace Match3
         LOG_INFO("Initializing GameStateManager");
         m_gameState = std::make_unique<GameStateManager>(m_renderer.get());
         m_gameState->Initialize(Config::BOARD_ROWS, Config::BOARD_COLS, Config::GEM_TYPES);
+
+        // 初始化 UI 系统
+        LOG_INFO("Initializing UI system");
+        m_fontRenderer = std::make_unique<FontRenderer>(m_sdlRenderer);
+        if (!m_fontRenderer->Initialize())
+        {
+            LOG_ERROR("Failed to initialize FontRenderer");
+            return false;
+        }
+
+        // 加载字体
+        if (!m_fontRenderer->LoadFont("resources/fonts/Roboto-Regular.ttf", 24, "default"))
+        {
+            LOG_ERROR("Failed to load default font");
+            return false;
+        }
+        if (!m_fontRenderer->LoadFont("resources/fonts/Roboto-Bold.ttf", 32, "title"))
+        {
+            LOG_ERROR("Failed to load title font");
+            return false;
+        }
+        if (!m_fontRenderer->LoadFont("resources/fonts/Roboto-Regular.ttf", 18, "small"))
+        {
+            LOG_ERROR("Failed to load small font");
+            return false;
+        }
+
+        // 创建 UI 管理器
+        m_uiManager = std::make_unique<UIManager>();
+        m_uiManager->SetFontRenderer(m_fontRenderer.get());
+
+        // 创建示例 UI
+        CreateDemoUI();
 
         // 设置输入回调
         SetupInputCallbacks();
@@ -164,6 +202,8 @@ namespace Match3
     {
         LOG_INFO("Shutting down game...");
 
+        m_uiManager.reset();
+        m_fontRenderer.reset();
         m_gameState.reset();
         m_inputManager.reset();
         m_resourceManager.reset();
@@ -196,6 +236,37 @@ namespace Match3
                 m_inputManager->HandleEvent(event);
             }
 
+            // 传递事件给 UI 管理器
+            if (m_uiManager)
+            {
+                switch (event.type)
+                {
+                case SDL_EVENT_MOUSE_MOTION:
+                    m_uiManager->HandleMouseMove(
+                        static_cast<int>(event.motion.x),
+                        static_cast<int>(event.motion.y));
+                    break;
+                case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                    if (event.button.button == SDL_BUTTON_LEFT)
+                    {
+                        m_uiManager->HandleMouseDown(
+                            static_cast<int>(event.button.x),
+                            static_cast<int>(event.button.y));
+                    }
+                    break;
+                case SDL_EVENT_MOUSE_BUTTON_UP:
+                    if (event.button.button == SDL_BUTTON_LEFT)
+                    {
+                        m_uiManager->HandleMouseUp(
+                            static_cast<int>(event.button.x),
+                            static_cast<int>(event.button.y));
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+
             // 处理系统事件
             switch (event.type)
             {
@@ -222,6 +293,12 @@ namespace Match3
         if (m_inputManager)
         {
             m_inputManager->Update();
+        }
+
+        // 更新 UI
+        if (m_uiManager)
+        {
+            m_uiManager->Update(deltaTime);
         }
 
         // 更新游戏状态管理器
@@ -261,6 +338,12 @@ namespace Match3
         if (m_gameState)
         {
             m_gameState->Render();
+        }
+
+        // 渲染 UI
+        if (m_uiManager)
+        {
+            m_uiManager->Render(m_renderer.get());
         }
 
         // 显示渲染结果
@@ -334,6 +417,94 @@ namespace Match3
             m_frameTimeAccumulator = 0.0f;
             m_frameCount = 0;
         }
+    }
+
+    void Game::CreateDemoUI()
+    {
+        LOG_INFO("Creating demo UI...");
+
+        // Create a title panel at the top
+        auto titlePanel = std::make_shared<Panel>(0, 0, m_windowWidth, 80);
+        titlePanel->SetColor(40, 40, 60, 255);
+        titlePanel->SetBorderEnabled(true);
+        titlePanel->SetBorderColor(100, 100, 150, 255);
+        titlePanel->SetId("title_panel");
+        titlePanel->SetZOrder(0);
+        m_uiManager->AddComponent(titlePanel);
+
+        // Create a title label
+        auto titleLabel = std::make_shared<Label>(m_windowWidth / 2, 24, "Match-3 UI Demo", "title");
+        titleLabel->SetColor(255, 255, 255, 255);
+        titleLabel->SetAlignment(TextAlign::Center);
+        titleLabel->SetFontRenderer(m_fontRenderer.get());
+        titleLabel->SetId("title_label");
+        titleLabel->SetZOrder(1);
+        m_uiManager->AddComponent(titleLabel);
+
+        // Create some buttons on the right side
+        int buttonX = m_windowWidth - 220;
+        int buttonY = 120;
+        int buttonSpacing = 60;
+
+        // Start button
+        auto startButton = std::make_shared<Button>(buttonX, buttonY, 200, 50, "Start Game", "default");
+        startButton->SetNormalColor(60, 120, 60, 255);
+        startButton->SetHoverColor(80, 150, 80, 255);
+        startButton->SetPressedColor(40, 100, 40, 255);
+        startButton->SetFontRenderer(m_fontRenderer.get());
+        startButton->SetId("start_button");
+        startButton->SetZOrder(2);
+        startButton->SetOnClick([this]() {
+            LOG_INFO("Start Game button clicked!");
+        });
+        m_uiManager->AddComponent(startButton);
+
+        // Settings button
+        auto settingsButton = std::make_shared<Button>(buttonX, buttonY + buttonSpacing, 200, 50, "Settings", "default");
+        settingsButton->SetNormalColor(80, 80, 120, 255);
+        settingsButton->SetHoverColor(100, 100, 150, 255);
+        settingsButton->SetPressedColor(60, 60, 100, 255);
+        settingsButton->SetFontRenderer(m_fontRenderer.get());
+        settingsButton->SetId("settings_button");
+        settingsButton->SetZOrder(2);
+        settingsButton->SetOnClick([this]() {
+            LOG_INFO("Settings button clicked!");
+        });
+        m_uiManager->AddComponent(settingsButton);
+
+        // Exit button
+        auto exitButton = std::make_shared<Button>(buttonX, buttonY + buttonSpacing * 2, 200, 50, "Exit", "default");
+        exitButton->SetNormalColor(120, 60, 60, 255);
+        exitButton->SetHoverColor(150, 80, 80, 255);
+        exitButton->SetPressedColor(100, 40, 40, 255);
+        exitButton->SetFontRenderer(m_fontRenderer.get());
+        exitButton->SetId("exit_button");
+        exitButton->SetZOrder(2);
+        exitButton->SetOnClick([this]() {
+            LOG_INFO("Exit button clicked!");
+            m_isRunning = false;
+        });
+        m_uiManager->AddComponent(exitButton);
+
+        // Create an info panel at the bottom
+        auto infoPanel = std::make_shared<Panel>(0, m_windowHeight - 60, m_windowWidth, 60);
+        infoPanel->SetColor(40, 40, 60, 255);
+        infoPanel->SetBorderEnabled(true);
+        infoPanel->SetBorderColor(100, 100, 150, 255);
+        infoPanel->SetId("info_panel");
+        infoPanel->SetZOrder(0);
+        m_uiManager->AddComponent(infoPanel);
+
+        // Create info label
+        auto infoLabel = std::make_shared<Label>(20, m_windowHeight - 40, 
+            "SDL_ttf UI System - Press ESC to exit | SPACE to pause", "small");
+        infoLabel->SetColor(200, 200, 200, 255);
+        infoLabel->SetFontRenderer(m_fontRenderer.get());
+        infoLabel->SetId("info_label");
+        infoLabel->SetZOrder(1);
+        m_uiManager->AddComponent(infoLabel);
+
+        LOG_INFO("Demo UI created successfully");
     }
 } // namespace Match3
 
