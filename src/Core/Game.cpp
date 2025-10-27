@@ -44,7 +44,7 @@ namespace Match3
         }
 
         // 尝试初始化音频（不强制要求）
-        if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
+        if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
         {
             LOG_WARN("Audio initialization failed: {} - continuing without audio", SDL_GetError());
         }
