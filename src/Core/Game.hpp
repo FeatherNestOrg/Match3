@@ -8,8 +8,8 @@ namespace Match3
 {
     class Renderer;
     class ResourceManager;
-    class GameState;
     class InputManager;
+    class GameStateManager;
 
     /**
      * @brief 游戏主类 - 负责游戏循环和核心系统管理
@@ -86,8 +86,8 @@ namespace Match3
         SDL_Renderer* m_sdlRenderer;
 
         std::unique_ptr<Renderer> m_renderer;
-        std::unique_ptr<GameState> m_gameState;
         std::unique_ptr<ResourceManager> m_resourceManager;
+        std::unique_ptr<GameStateManager> m_gameState;
         std::unique_ptr<InputManager> m_inputManager;
 
         bool m_isRunning;

@@ -61,6 +61,14 @@ namespace Match3
             }
         }
     }
+    
+    void Renderer::FillCircleWithAlpha(const int centerX, const int centerY, const int radius,
+                                       const uint8_t r, const uint8_t g, const uint8_t b, const float alpha)
+    {
+        const auto alphaValue = static_cast<uint8_t>(255 * alpha);
+        SDL_SetRenderDrawColor(m_sdlRenderer, r, g, b, alphaValue);
+        FillCircle(centerX, centerY, radius);
+    }
 
     void Renderer::DrawCircle(const int centerX, const int centerY, const int radius)
     {

@@ -1,16 +1,7 @@
+file(GLOB_RECURSE M3_SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+
 add_executable(${PROJECT_NAME}
-        main.cpp
-        Core/Game.cpp
-        Core/Logger.cpp
-        Render/Renderer.cpp
-        Render/Texture.cpp
-        Render/ResourceManager.cpp
-        Game/Gem.cpp
-        Game/Board.cpp
-        Game/MatchDetector.cpp
-        Game/GameState.cpp
-        Input/InputManager.cpp
-        Input/MouseHandler.cpp
+        ${M3_SOURCES}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src")
@@ -24,6 +15,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
         unordered_dense::unordered_dense
         spdlog::spdlog
+        EnTT::EnTT
 )
 
 # ============================================================================

@@ -3,7 +3,7 @@
 #include "Logger.hpp"
 #include "Render/Renderer.hpp"
 #include "Render/ResourceManager.hpp"
-#include "Game/GameState.hpp"
+#include "Managers/GameStateManager.hpp"
 #include "Input/InputManager.hpp"
 #include "Input/MouseHandler.hpp"
 #include <SDL3/SDL_timer.h>
@@ -74,13 +74,10 @@ namespace Match3
             return false;
         }
 
-        // 创建游戏状态
-        m_gameState = std::make_unique<GameState>();
-        if (!m_gameState->Initialize())
-        {
-            LOG_ERROR("Failed to initialize game state");
-            return false;
-        }
+        // 创建游戏状态管理器
+        LOG_INFO("Initializing GameStateManager");
+        m_gameState = std::make_unique<GameStateManager>(m_renderer.get());
+        m_gameState->Initialize(Config::BOARD_ROWS, Config::BOARD_COLS, Config::GEM_TYPES);
 
         // 设置输入回调
         SetupInputCallbacks();
@@ -167,7 +164,6 @@ namespace Match3
     {
         LOG_INFO("Shutting down game...");
 
-        // 清理资源
         m_gameState.reset();
         m_inputManager.reset();
         m_resourceManager.reset();
@@ -228,7 +224,7 @@ namespace Match3
             m_inputManager->Update();
         }
 
-        // 更新游戏状态
+        // 更新游戏状态管理器
         if (m_gameState)
         {
             m_gameState->Update(deltaTime);
@@ -261,66 +257,10 @@ namespace Match3
                                  Config::BOARD_OFFSET_X + Config::BOARD_COLS * Config::GEM_SIZE, y);
         }
 
-        // 绘制游戏棋盘
+        // 渲染游戏内容（宝石等）
         if (m_gameState)
         {
-            const auto& board = m_gameState->GetBoard();
-
-            for (int row = 0; row < Config::BOARD_ROWS; ++row)
-            {
-                for (int col = 0; col < Config::BOARD_COLS; ++col)
-                {
-                    const auto& gem = board.GetGem(row, col);
-
-                    // 跳过空宝石
-                    if (gem.IsEmpty())
-                        continue;
-
-                    // 获取宝石颜色
-                    const int gemType = static_cast<int>(gem.GetType());
-                    const auto& color = Config::GEM_COLORS[gemType];
-
-                    // 计算绘制位置
-                    const int centerX = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE + Config::GEM_SIZE / 2;
-                    const int centerY = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE + Config::GEM_SIZE / 2;
-                    const int radius = Config::GEM_SIZE / 2 - Config::GEM_MARGIN;
-
-                    // 绘制实心圆（宝石主体）
-                    m_renderer->SetDrawColor(color.r, color.g, color.b, color.a);
-                    m_renderer->FillCircle(centerX, centerY, radius);
-
-                    // 绘制圆形边框（增加视觉效果）
-                    const auto& borderColor = Config::GEM_BORDER_COLOR;
-                    m_renderer->SetDrawColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a);
-                    m_renderer->DrawCircle(centerX, centerY, radius);
-
-                    // 添加高光效果（小白圆）
-                    const int highlightOffset = radius / Config::GEM_HIGHLIGHT_OFFSET_DIVISOR;
-                    const int highlightRadius = highlightOffset;
-                    const int highlightX = centerX - highlightOffset;
-                    const int highlightY = centerY - highlightOffset;
-                    const auto& highlightColor = Config::GEM_HIGHLIGHT_COLOR;
-                    m_renderer->SetDrawColor(highlightColor.r, highlightColor.g, highlightColor.b, highlightColor.a);
-                    m_renderer->FillCircle(highlightX, highlightY, highlightRadius);
-
-                    // 如果是选中的宝石，绘制选中框
-                    if (m_gameState->HasSelection() &&
-                        row == m_gameState->GetSelectedRow() && col == m_gameState->GetSelectedCol())
-                    {
-                        const auto& selectedColor = Config::SELECTED_COLOR;
-                        m_renderer->SetDrawColor(selectedColor.r, selectedColor.g, selectedColor.b, selectedColor.a);
-
-                        // 绘制选中框（矩形）
-                        const int x = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE;
-                        const int y = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE;
-
-                        for (int i = 0; i < 3; ++i)
-                        {
-                            m_renderer->DrawRect(x + i, y + i, Config::GEM_SIZE - 2 * i, Config::GEM_SIZE - 2 * i);
-                        }
-                    }
-                }
-            }
+            m_gameState->Render();
         }
 
         // 显示渲染结果
@@ -331,7 +271,7 @@ namespace Match3
     {
         // 设置鼠标点击回调
         m_inputManager->SetMouseClickCallback(
-            [this](int x, int y, InputManager::MouseButton button)
+            [this](const int x, const int y, const InputManager::MouseButton button)
             {
                 if (button == InputManager::MouseButton::Left && !m_isPaused)
                 {
@@ -340,8 +280,13 @@ namespace Match3
                     if (boardPos.has_value())
                     {
                         auto [row, col] = boardPos.value();
-                        m_gameState->HandleClick(row, col);
                         LOG_DEBUG("Click at board position: ({}, {})", row, col);
+
+                        // 将点击传递给游戏状态管理器
+                        if (m_gameState)
+                        {
+                            m_gameState->HandleClick(row, col);
+                        }
                     }
                 }
             });
@@ -363,7 +308,6 @@ namespace Match3
                 else if (key == SDLK_R)
                 {
                     LOG_INFO("Restarting game...");
-                    m_gameState->Reset();
                 }
                 else if (key == SDLK_H)
                 {

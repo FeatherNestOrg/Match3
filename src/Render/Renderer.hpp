@@ -57,6 +57,13 @@ namespace Match3
          * @brief 绘制实心圆形
          */
         void FillCircle(int centerX, int centerY, int radius);
+        
+        /**
+         * @brief 绘制实心圆形（带透明度）
+         * @param alpha 透明度 (0.0-1.0)
+         */
+        void FillCircleWithAlpha(int centerX, int centerY, int radius,
+                                 uint8_t r, uint8_t g, uint8_t b, float alpha);
 
         /**
          * @brief 绘制空心圆形
