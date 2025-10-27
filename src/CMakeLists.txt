@@ -1,12 +1,15 @@
 add_executable(${PROJECT_NAME}
         main.cpp
+        Core/Game.hpp
+        Core/Game.cpp
+        Core/Config.hpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
 # Configure logging
 if (ENABLE_CONSOLE_LOG)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE TEH_ENABLE_CONSOLE_LOG)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE M3_ENABLE_CONSOLE_LOG)
 endif ()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -14,6 +17,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3_image::SDL3_image
         unordered_dense::unordered_dense
         spdlog
+        fmt
 )
 
 if (WIN32)
