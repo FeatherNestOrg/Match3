@@ -3,25 +3,18 @@
   "name": "match-3",
   "version-string": "0.1.0",
   "description": "Match-3 puzzle game built with SDL3",
-  "homepage": "https://github.com/yourusername/match-3",
-  "license": "MIT",
   "dependencies": [
     {
-      "name": "sdl3",
-      "version>=": "3.0.0"
+      "name": "sdl3"
     },
     {
-      "name": "sdl3-image",
-      "version>=": "3.0.0"
+      "name": "sdl3-image"
     },
     {
-      "name": "spdlog",
-      "version>=": "1.12.0"
+      "name": "spdlog"
     },
     {
-      "name": "fmt",
-      "version>=": "10.0.0"
+      "name": "fmt"
     }
-  ],
-  "builtin-baseline": "c8696863d371ab7f46545af3f11be2dcec6d8ace"
+  ]
 }

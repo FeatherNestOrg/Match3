@@ -41,7 +41,8 @@ jobs:
             libxkbcommon-dev \
             libegl1-mesa-dev \
             libibus-1.0-dev \
-            libdbus-1-dev
+            libdbus-1-dev \
+
 
       - name: Configure CMake
         run: |

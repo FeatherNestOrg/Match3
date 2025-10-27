@@ -1,4 +1,4 @@
-find_package(SDL3 REQUIRED)
+find_package(SDL3 CONFIG QUIET)
 
 if (NOT SDL3_FOUND)
     message(STATUS "SDL3 can't be found locally, try fetching from remote...")
@@ -13,7 +13,7 @@ else ()
     message(STATUS "Found SDL3 v${SDL3_VERSION}")
 endif ()
 
-find_package(SDL3_image REQUIRED)
+find_package(SDL3_image CONFIG QUIET)
 if (NOT SDL3_image_FOUND)
     message(STATUS "SDL3_image can't be found locally, try fetching from remote...")
     FetchContent_Declare(
