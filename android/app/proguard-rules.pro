@@ -1,0 +1,3 @@
+-dontwarn com.android.**
+-dontwarn androidx.**
+-keep class com.feathernestz.match3.** { *; }

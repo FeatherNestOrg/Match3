@@ -1,8 +1,10 @@
 name: Multi-Platform Build
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 env:
@@ -10,17 +12,17 @@ env:
 
 jobs:
   # ============================================================================
-  # Linux Build (Ubuntu 22.04+)
+  # Linux Build (Ubuntu 24.04+)
   # ============================================================================
   build-linux:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
-        build_type: [ Release, Debug ]
-        log_level: [ INFO, DEBUG ]
-        console_log: [ ON, OFF ]
-    
+        build_type: [Release]
+        log_level: [INFO]
+        console_log: [OFF]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,7 +45,6 @@ jobs:
             libibus-1.0-dev \
             libdbus-1-dev \
             libspdlog-dev \
-
 
       - name: Configure CMake
         run: |
@@ -76,13 +77,13 @@ jobs:
   # ============================================================================
   build-windows:
     runs-on: windows-latest
-    
+
     strategy:
       matrix:
-        build_type: [ Release, Debug ]
-        log_level: [ INFO, DEBUG ]
-        console_log: [ ON, OFF ]
-    
+        build_type: [Release]
+        log_level: [INFO]
+        console_log: [OFF]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -97,7 +98,6 @@ jobs:
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
-
 
       - name: vcpkg build
         uses: johnwason/vcpkg-action@v7
@@ -139,13 +139,13 @@ jobs:
   # ============================================================================
   build-android:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
-        build_type: [ Release, Debug ]
-        abi: [ armeabi-v7a, arm64-v8a, x86, x86_64 ]
-        log_level: [ INFO, DEBUG ]
-    
+        build_type: [Release]
+        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
+        log_level: [INFO]
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -155,8 +155,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
@@ -173,19 +173,47 @@ jobs:
             -DANDROID_ABI=${{ matrix.abi }} \
             -DANDROID_PLATFORM=android-24 \
             -DANDROID_STL=c++_shared \
-            -DENABLE_CONSOLE_LOG=ON \
+            -DENABLE_CONSOLE_LOG=OFF \
             -DLOG_LEVEL=${{ matrix.log_level }}
 
       - name: Build
         run: cmake --build build-android-${{ matrix.abi }} --config ${{ matrix.build_type }} -j$(nproc)
 
+      - name: Check build artifacts
+        run: |
+          echo "=== Build directory structure ==="
+          find build-android-${{ matrix.abi }} -type f -name "*.so" -o -name "libMatch3*" | head -20
+          echo ""
+          echo "=== Checking src build directory ==="
+          ls -la build-android-${{ matrix.abi }}/src/ | grep -E "(\.so|Match3)" || echo "No Match3 files found"
+
       - name: Package
         run: |
           cd build-android-${{ matrix.abi }}
           mkdir -p package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}
-          cp libmatch-3.so package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}/ || echo "Binary name may differ"
+
+          # Find the built shared library (typically in src directory)
+          if [ -f "src/libMatch3.so" ]; then
+            echo "Found library at src/libMatch3.so"
+            cp src/libMatch3.so package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}/
+          elif find . -name "*.so" | grep -i match; then
+            find . -name "libMatch3.so" -exec cp {} package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}/ \;
+            find . -name "libmatch-3.so" -exec cp {} package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}/ \;
+          else
+            echo "WARNING: No .so file found!"
+            echo "Contents of build directory:"
+            find . -type f -name "*.so" | head -10
+          fi
+
+          # Verify package contents
+          echo "Package contents after copy:"
+          ls -la package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}/
+
+          # Create tarball
           cd package
           tar czf match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}.tar.gz match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}
+          echo "Archive created:"
+          ls -lh match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -195,13 +223,134 @@ jobs:
           retention-days: 7
 
   # ============================================================================
+  # Android APK Build (builds APK from native .so libraries)
+  # ============================================================================
+  build-android-apk:
+    runs-on: ubuntu-latest
+    needs: build-android
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools-version: "34.0.0"
+
+      - name: Download all Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Extract .so files and prepare Android project
+        run: |
+          # Create jniLibs directory structure
+          mkdir -p android/app/src/main/jniLibs/{arm64-v8a,armeabi-v7a,x86,x86_64}
+
+          # Extract and copy .so files for each ABI
+          # Create a single extraction directory for all ABIs
+          extract_dir=$(mktemp -d)
+          trap "rm -rf $extract_dir" EXIT
+
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            artifact_dir="artifacts/match-3-android-${abi}-Release-logINFO"
+            if [ -d "$artifact_dir" ]; then
+              echo "Processing $abi..."
+
+              # Find the tarball (more reliable method)
+              tar_file=""
+              for f in "$artifact_dir"/*.tar.gz; do
+                if [ -f "$f" ]; then
+                  tar_file="$f"
+                  break
+                fi
+              done
+
+              if [ -n "$tar_file" ]; then
+                echo "Found tarball: $tar_file"
+
+                # Clean extraction directory before each extraction
+                rm -rf "$extract_dir"/*
+                # Extract the tarball to temp directory
+                tar xzf "$tar_file" -C "$extract_dir"
+
+                # Find and copy the .so file directly from extracted content
+                so_file=$(find "$extract_dir" -type f -name "libMatch3.so" 2>/dev/null | head -1)
+                if [ -n "$so_file" ] && [ -f "$so_file" ]; then
+                  echo "Found libMatch3.so: $so_file"
+                  cp "$so_file" "android/app/src/main/jniLibs/$abi/libMatch3.so"
+                  echo "✓ Copied to android/app/src/main/jniLibs/$abi/libMatch3.so"
+                else
+                  echo "⚠ Warning: libMatch3.so not found in tarball"
+                fi
+              else
+                echo "⚠ Warning: No .tar.gz file found in $artifact_dir"
+              fi
+            else
+              echo "⚠ Warning: Artifact directory not found: $artifact_dir"
+            fi
+          done
+            fi
+          done
+
+          # List prepared libraries
+          echo ""
+          echo "=== Prepared native libraries ==="
+          if [ $(find android/app/src/main/jniLibs -type f -name "*.so" | wc -l) -gt 0 ]; then
+            find android/app/src/main/jniLibs -type f -name "*.so"
+          else
+            echo "⚠ Warning: No .so files found in jniLibs!"
+          fi
+
+      - name: Copy game assets to Android
+        run: |
+          # Copy resources if they exist
+          if [ -d "resources" ]; then
+            mkdir -p android/app/src/main/assets
+            cp -r resources/* android/app/src/main/assets/ 2>/dev/null || true
+          fi
+
+      - name: Setup Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Sign APK (optional - for testing)
+        run: |
+          # Create keystore for testing (should use proper signing for production)
+          cd android/app/build/outputs/apk/release
+          ls -lh *.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Match3-Android-APK-Release
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 7
+
+  # ============================================================================
   # Create Release (on tags)
   # ============================================================================
   create-release:
-    needs: [ build-linux, build-windows, build-android ]
+    needs: [build-linux, build-windows, build-android, build-android-apk]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    
+
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4

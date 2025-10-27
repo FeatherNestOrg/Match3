@@ -1,8 +1,13 @@
 file(GLOB_RECURSE M3_SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
-add_executable(${PROJECT_NAME}
-        ${M3_SOURCES}
-)
+# Determine if we're building for Android
+if (ANDROID)
+    # Build as shared library for Android
+    add_library(${PROJECT_NAME} SHARED ${M3_SOURCES})
+else ()
+    # Build as executable for desktop platforms
+    add_executable(${PROJECT_NAME} ${M3_SOURCES})
+endif ()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
@@ -33,16 +38,24 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 # Installation configuration
 # ============================================================================
 
-# Install the executable
-install(TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION bin
-        BUNDLE DESTINATION .
-)
+if (ANDROID)
+    # For Android, install the shared library
+    install(TARGETS ${PROJECT_NAME}
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+    )
+else ()
+    # For desktop platforms, install the executable
+    install(TARGETS ${PROJECT_NAME}
+            RUNTIME DESTINATION bin
+            BUNDLE DESTINATION .
+    )
 
-install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
-        DESTINATION bin
-        OPTIONAL
-)
+    install(FILES $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+            DESTINATION bin
+            OPTIONAL
+    )
+endif ()
 
 install(DIRECTORY DESTINATION resources/textures)
 install(DIRECTORY DESTINATION resources/sounds)
