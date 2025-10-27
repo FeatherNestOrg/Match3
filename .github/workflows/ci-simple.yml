@@ -42,6 +42,16 @@ jobs:
         if: runner.os == 'Windows'
         uses: jwlawson/actions-setup-cmake@v2
 
+      - name: Configure Windows build environment
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          # Disable interactive prompts in batch mode
+          $env:CI = "true"
+          $env:VCPKG_FORCE_SYSTEM_BINARIES = "1"
+          echo "CI=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "VCPKG_FORCE_SYSTEM_BINARIES=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Install vcpkg packages (Windows)
         if: runner.os == 'Windows'
         uses: johnwason/vcpkg-action@v7
@@ -50,6 +60,15 @@ jobs:
           manifest-dir: ${{ github.workspace }}
           triplet: x64-windows-static
           token: ${{ secrets.GITHUB_TOKEN }}
+          cache: true
+        env:
+          # Suppress CMake warnings for unused variables in SDL3 port
+          VCPKG_CMAKE_CONFIGURE_OPTIONS: "-DMAYBE_UNUSED_VARIABLES=SDL_UNIX_CONSOLE_BUILD"
+          # Disable interactive mode in batch
+          VCPKG_FORCE_SYSTEM_BINARIES: "1"
+          # Set shell to non-interactive
+          CI: "true"
+
 
       # Configure and Build
       - name: Configure CMake (Linux)

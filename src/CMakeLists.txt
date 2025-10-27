@@ -18,8 +18,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
         SDL3_image::SDL3_image
         unordered_dense::unordered_dense
-        spdlog
-        fmt
+        spdlog::spdlog
+        fmt::fmt
 )
 
 if (WIN32)
