@@ -48,7 +48,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
-          pkgs: sdl3 sdl3-image spdlog
+          pkgs: sdl3 sdl3-image
           triplet: x64-windows-static
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
@@ -73,11 +73,15 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
+      - name: Create Package
+        run: |
+          cmake --install build --config Release --prefix install
+          cd build
+          cpack -C Release -G ZIP -B packages
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: match-3-${{ matrix.name }}
-          path: |
-            build/${{ matrix.artifact }}
-            build/Release/${{ matrix.artifact }}
+          name: Match3-${{ matrix.name }}
+          path: build/packages/*.zip
           retention-days: 3

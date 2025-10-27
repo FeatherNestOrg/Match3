@@ -56,20 +56,19 @@ jobs:
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }} -j$(nproc)
 
-      - name: Package
+      - name: Package with CPack
+        if: matrix.build_type == 'Release'
         run: |
+          cmake --install build --config ${{ matrix.build_type }} --prefix install
           cd build
-          mkdir -p package/match-3-linux-${{ matrix.build_type }}
-          cp match-3 package/match-3-linux-${{ matrix.build_type }}/
-          # Copy any required .so files if needed
-          cd package
-          tar czf match-3-linux-${{ matrix.build_type }}.tar.gz match-3-linux-${{ matrix.build_type }}
+          cpack -C ${{ matrix.build_type }} -G ZIP -B packages
 
-      - name: Upload artifact
+      - name: Upload artifact (CPack)
+        if: matrix.build_type == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: match-3-linux-${{ matrix.build_type }}-log${{ matrix.log_level }}-console${{ matrix.console_log }}
-          path: build/package/match-3-linux-${{ matrix.build_type }}.tar.gz
+          name: Match3-Linux-${{ matrix.build_type }}-log${{ matrix.log_level }}-console${{ matrix.console_log }}
+          path: build/packages/*.zip
           retention-days: 7
 
   # ============================================================================
@@ -120,21 +119,19 @@ jobs:
       - name: Build
         run: cmake --build build --config ${{ matrix.build_type }} -j
 
-      - name: Package
+      - name: Package with CPack
+        if: matrix.build_type == 'Release'
         run: |
+          cmake --install build --config ${{ matrix.build_type }} --prefix install
           cd build
-          mkdir -p package/match-3-windows-${{ matrix.build_type }}
-          cp ${{ matrix.build_type }}/match-3.exe package/match-3-windows-${{ matrix.build_type }}/
-          # Copy DLLs
-          cp ${{ matrix.build_type }}/*.dll package/match-3-windows-${{ matrix.build_type }}/ 2>$null || echo "No DLLs to copy"
-          cd package
-          Compress-Archive -Path match-3-windows-${{ matrix.build_type }} -DestinationPath match-3-windows-${{ matrix.build_type }}.zip
+          cpack -C ${{ matrix.build_type }} -G ZIP -B packages
 
-      - name: Upload artifact
+      - name: Upload artifact (CPack)
+        if: matrix.build_type == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: match-3-windows-${{ matrix.build_type }}-log${{ matrix.log_level }}-console${{ matrix.console_log }}
-          path: build/package/match-3-windows-${{ matrix.build_type }}.zip
+          name: Match3-Windows-${{ matrix.build_type }}-log${{ matrix.log_level }}-console${{ matrix.console_log }}
+          path: build/packages/*.zip
           retention-days: 7
 
   # ============================================================================
