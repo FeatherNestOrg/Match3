@@ -1,3 +1,5 @@
+set(SPDLOG_USE_STD_FORMAT ON CACHE BOOL "Use std::format for spdlog")
+
 find_package(spdlog CONFIG QUIET)
 
 if (NOT spdlog_FOUND)
@@ -11,4 +13,3 @@ if (NOT spdlog_FOUND)
 else ()
     message(STATUS "Found spdlog")
 endif ()
-
