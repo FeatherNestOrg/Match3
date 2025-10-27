@@ -1,0 +1,222 @@
+name: Multi-Platform Build
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  # ============================================================================
+  # Linux Build (Ubuntu 22.04+)
+  # ============================================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        build_type: [ Release, Debug ]
+        log_level: [ INFO, DEBUG ]
+        console_log: [ ON, OFF ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libx11-dev \
+            libxext-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libegl1-mesa-dev \
+            libibus-1.0-dev \
+            libdbus-1-dev
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DENABLE_CONSOLE_LOG=${{ matrix.console_log }} \
+            -DLOG_LEVEL=${{ matrix.log_level }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} -j$(nproc)
+
+      - name: Package
+        run: |
+          cd build
+          mkdir -p package/match-3-linux-${{ matrix.build_type }}
+          cp match-3 package/match-3-linux-${{ matrix.build_type }}/
+          # Copy any required .so files if needed
+          cd package
+          tar czf match-3-linux-${{ matrix.build_type }}.tar.gz match-3-linux-${{ matrix.build_type }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: match-3-linux-${{ matrix.build_type }}-log${{ matrix.log_level }}-console${{ matrix.console_log }}
+          path: build/package/match-3-linux-${{ matrix.build_type }}.tar.gz
+          retention-days: 7
+
+  # ============================================================================
+  # Windows Build (MSVC)
+  # ============================================================================
+  build-windows:
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        build_type: [ Release, Debug ]
+        log_level: [ INFO, DEBUG ]
+        console_log: [ ON, OFF ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'c8696863d371ab7f46545af3f11be2dcec6d8ace'
+          vcpkgJsonGlob: 'vcpkg.json'
+
+      - name: Install vcpkg packages
+        run: |
+          vcpkg install sdl3:x64-windows
+          vcpkg install sdl3-image:x64-windows
+          vcpkg install spdlog:x64-windows
+          vcpkg install fmt:x64-windows
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+      - name: Configure CMake
+        run: |
+          cmake -B build `
+            -G "Visual Studio 17 2022" `
+            -A x64 `
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+            -DENABLE_CONSOLE_LOG=${{ matrix.console_log }} `
+            -DLOG_LEVEL=${{ matrix.log_level }} `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} -j
+
+      - name: Package
+        run: |
+          cd build
+          mkdir -p package/match-3-windows-${{ matrix.build_type }}
+          cp ${{ matrix.build_type }}/match-3.exe package/match-3-windows-${{ matrix.build_type }}/
+          # Copy DLLs
+          cp ${{ matrix.build_type }}/*.dll package/match-3-windows-${{ matrix.build_type }}/ 2>$null || echo "No DLLs to copy"
+          cd package
+          Compress-Archive -Path match-3-windows-${{ matrix.build_type }} -DestinationPath match-3-windows-${{ matrix.build_type }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: match-3-windows-${{ matrix.build_type }}-log${{ matrix.log_level }}-console${{ matrix.console_log }}
+          path: build/package/match-3-windows-${{ matrix.build_type }}.zip
+          retention-days: 7
+
+  # ============================================================================
+  # Android Build (NDK)
+  # ============================================================================
+  build-android:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        build_type: [ Release, Debug ]
+        abi: [ armeabi-v7a, arm64-v8a, x86, x86_64 ]
+        log_level: [ INFO, DEBUG ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26c
+          add-to-path: true
+
+      - name: Configure CMake for Android
+        run: |
+          cmake -B build-android-${{ matrix.abi }} \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_PLATFORM=android-24 \
+            -DANDROID_STL=c++_shared \
+            -DENABLE_CONSOLE_LOG=ON \
+            -DLOG_LEVEL=${{ matrix.log_level }}
+
+      - name: Build
+        run: cmake --build build-android-${{ matrix.abi }} --config ${{ matrix.build_type }} -j$(nproc)
+
+      - name: Package
+        run: |
+          cd build-android-${{ matrix.abi }}
+          mkdir -p package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}
+          cp libmatch-3.so package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}/ || echo "Binary name may differ"
+          cd package
+          tar czf match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}.tar.gz match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}-log${{ matrix.log_level }}
+          path: build-android-${{ matrix.abi }}/package/match-3-android-${{ matrix.abi }}-${{ matrix.build_type }}.tar.gz
+          retention-days: 7
+
+  # ============================================================================
+  # Create Release (on tags)
+  # ============================================================================
+  create-release:
+    needs: [ build-linux, build-windows, build-android ]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

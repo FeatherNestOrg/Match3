@@ -1,0 +1,88 @@
+name: Simple CI
+
+# 这是一个简化版的CI，只构建主要平台的Release版本
+# 适合日常开发时快速测试
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  quick-build:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        include:
+          - os: ubuntu-latest
+            name: Linux
+            artifact: match-3
+          - os: windows-latest
+            name: Windows
+            artifact: match-3.exe
+    
+    runs-on: ${{ matrix.os }}
+    name: Build on ${{ matrix.name }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Linux dependencies
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build pkg-config \
+            libx11-dev libxext-dev libwayland-dev libxkbcommon-dev \
+            libegl1-mesa-dev libibus-1.0-dev libdbus-1-dev
+
+      # Windows - setup vcpkg
+      - name: Setup vcpkg (Windows)
+        if: runner.os == 'Windows'
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: 'c8696863d371ab7f46545af3f11be2dcec6d8ace'
+
+      - name: Install vcpkg packages (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg install sdl3:x64-windows
+          vcpkg install sdl3-image:x64-windows
+          vcpkg install spdlog:x64-windows
+          vcpkg install fmt:x64-windows
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+      # Configure and Build
+      - name: Configure CMake (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_CONSOLE_LOG=ON \
+            -DLOG_LEVEL=INFO
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -B build `
+            -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DENABLE_CONSOLE_LOG=ON `
+            -DLOG_LEVEL=INFO `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: match-3-${{ matrix.name }}
+          path: |
+            build/${{ matrix.artifact }}
+            build/Release/${{ matrix.artifact }}
+          retention-days: 3
