@@ -1,5 +1,8 @@
 #include "Game.hpp"
+#include "Config.hpp"
 #include "Logger.hpp"
+#include "Render/Renderer.hpp"
+#include "Render/ResourceManager.hpp"
 #include <SDL3/SDL_timer.h>
 
 #include <utility>
@@ -11,7 +14,7 @@ namespace Match3
           , m_windowWidth(width)
           , m_windowHeight(height)
           , m_window(nullptr)
-          , m_renderer(nullptr)
+          , m_sdlRenderer(nullptr)
           , m_isRunning(false)
           , m_isPaused(false)
           , m_fps(0.0f)
@@ -43,7 +46,7 @@ namespace Match3
             m_windowHeight,
             SDL_WINDOW_RESIZABLE,
             &m_window,
-            &m_renderer))
+            &m_sdlRenderer))
         {
             LOG_ERROR("Window/Renderer creation failed: {}", SDL_GetError());
             return false;
@@ -52,11 +55,46 @@ namespace Match3
         LOG_INFO("Window created: {}x{}", m_windowWidth, m_windowHeight);
 
         // 设置渲染器混合模式
-        SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawBlendMode(m_sdlRenderer, SDL_BLENDMODE_BLEND);
+
+        // 创建渲染系统
+        m_renderer = std::make_unique<Renderer>(m_sdlRenderer);
+        m_resourceManager = std::make_unique<ResourceManager>(m_sdlRenderer);
+
+        // 初始化渲染资源
+        if (!InitializeRenderResources())
+        {
+            LOG_ERROR("Failed to initialize render resources");
+            return false;
+        }
 
         m_isRunning = true;
         LOG_INFO("Game initialized successfully!");
 
+        return true;
+    }
+
+    bool Game::InitializeRenderResources()
+    {
+        LOG_INFO("Initializing render resources...");
+
+        // 创建宝石纹理（使用配置中定义的颜色）
+        for (int i = 0; i < Config::GEM_TYPES; ++i)
+        {
+            const auto& color = Config::GEM_COLORS[i];
+            const std::string textureName = "gem_" + std::to_string(i);
+
+            if (!m_resourceManager->CreateColorTexture(
+                textureName,
+                Config::GEM_SIZE, Config::GEM_SIZE,
+                color.r, color.g, color.b, color.a))
+            {
+                LOG_ERROR("Failed to create gem texture {}", i);
+                return false;
+            }
+        }
+
+        LOG_INFO("Render resources initialized successfully");
         return true;
     }
 
@@ -112,10 +150,14 @@ namespace Match3
     {
         LOG_INFO("Shutting down game...");
 
-        if (m_renderer)
+        // 清理资源
+        m_resourceManager.reset();
+        m_renderer.reset();
+
+        if (m_sdlRenderer)
         {
-            SDL_DestroyRenderer(m_renderer);
-            m_renderer = nullptr;
+            SDL_DestroyRenderer(m_sdlRenderer);
+            m_sdlRenderer = nullptr;
         }
 
         if (m_window)
@@ -174,34 +216,65 @@ namespace Match3
 
     void Game::Render()
     {
-        // 清空屏幕（深色背景）
-        SDL_SetRenderDrawColor(m_renderer, 20, 20, 30, 255);
-        SDL_RenderClear(m_renderer);
+        // 清空屏幕（使用配置中定义的背景色）
+        m_renderer->Clear(Config::BG_COLOR.r, Config::BG_COLOR.g, 
+                         Config::BG_COLOR.b, Config::BG_COLOR.a);
 
-        // TODO: 这里将添加渲染逻辑
-        // - 渲染背景
-        // - 渲染棋盘
-        // - 渲染宝石
-        // - 渲染 UI
-        // 等等...
+        // 绘制棋盘网格
+        m_renderer->SetDrawColor(Config::GRID_COLOR.r, Config::GRID_COLOR.g,
+                                 Config::GRID_COLOR.b, Config::GRID_COLOR.a);
 
-        // 临时：绘制一个简单的网格作为占位
-        SDL_SetRenderDrawColor(m_renderer, 60, 60, 80, 255);
-
-        // 垂直线
-        for (int x = 0; x <= m_windowWidth; x += 80)
+        // 绘制垂直线
+        for (int col = 0; col <= Config::BOARD_COLS; ++col)
         {
-            SDL_RenderLine(m_renderer, x, 0, x, m_windowHeight);
+            const int x = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE;
+            m_renderer->DrawLine(x, Config::BOARD_OFFSET_Y,
+                                x, Config::BOARD_OFFSET_Y + Config::BOARD_ROWS * Config::GEM_SIZE);
         }
 
-        // 水平线
-        for (int y = 0; y <= m_windowHeight; y += 80)
+        // 绘制水平线
+        for (int row = 0; row <= Config::BOARD_ROWS; ++row)
         {
-            SDL_RenderLine(m_renderer, 0, y, m_windowWidth, y);
+            const int y = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE;
+            m_renderer->DrawLine(Config::BOARD_OFFSET_X, y,
+                                Config::BOARD_OFFSET_X + Config::BOARD_COLS * Config::GEM_SIZE, y);
+        }
+
+        // 绘制示例宝石网格 - 展示所有颜色的宝石
+        for (int row = 0; row < Config::BOARD_ROWS; ++row)
+        {
+            for (int col = 0; col < Config::BOARD_COLS; ++col)
+            {
+                // 使用行列索引计算宝石类型（循环使用颜色）
+                const int gemType = (row * Config::BOARD_COLS + col) % Config::GEM_TYPES;
+                const auto& color = Config::GEM_COLORS[gemType];
+
+                const int centerX = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE + Config::GEM_SIZE / 2;
+                const int centerY = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE + Config::GEM_SIZE / 2;
+                const int radius = Config::GEM_SIZE / 2 - Config::GEM_MARGIN;
+
+                // 绘制实心圆（宝石主体）
+                m_renderer->SetDrawColor(color.r, color.g, color.b, color.a);
+                m_renderer->FillCircle(centerX, centerY, radius);
+
+                // 绘制圆形边框（增加视觉效果）
+                const auto& borderColor = Config::GEM_BORDER_COLOR;
+                m_renderer->SetDrawColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+                m_renderer->DrawCircle(centerX, centerY, radius);
+
+                // 添加高光效果（小白圆）
+                const int highlightOffset = radius / Config::GEM_HIGHLIGHT_OFFSET_DIVISOR;
+                const int highlightRadius = highlightOffset;
+                const int highlightX = centerX - highlightOffset;
+                const int highlightY = centerY - highlightOffset;
+                const auto& highlightColor = Config::GEM_HIGHLIGHT_COLOR;
+                m_renderer->SetDrawColor(highlightColor.r, highlightColor.g, highlightColor.b, highlightColor.a);
+                m_renderer->FillCircle(highlightX, highlightY, highlightRadius);
+            }
         }
 
         // 显示渲染结果
-        SDL_RenderPresent(m_renderer);
+        m_renderer->Present();
     }
 
     void Game::UpdateFPS(float deltaTime)
