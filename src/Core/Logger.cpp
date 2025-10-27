@@ -19,13 +19,13 @@ namespace Match3
 
             // 1. 根据编译选项决定是否添加控制台输出
 #ifdef M3_ENABLE_CONSOLE_LOG
-            auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+            const auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
             console_sink->set_pattern("[%H:%M:%S.%e] [%^%l%$] %v");
             sinks.push_back(console_sink);
 #endif
 
             // 2. 创建 .log 文件夹（如果不存在）
-            std::filesystem::path log_dir = ".log";
+            const std::filesystem::path log_dir = ".log";
             if (!std::filesystem::exists(log_dir))
             {
                 std::filesystem::create_directories(log_dir);
@@ -42,9 +42,9 @@ namespace Match3
 
             // 4. 添加文件输出 (使用滚动文件，最大 5MB，最多保留 3 个文件)
             auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-                oss.str(), 
-                1024 * 1024 * 5,  // 5MB
-                3                  // 保留 3 个文件
+                oss.str(),
+                1024 * 1024 * 5, // 5MB
+                3 // 保留 3 个文件
             );
             file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%s:%#] %v");
             sinks.push_back(file_sink);
@@ -95,11 +95,11 @@ namespace Match3
 
             s_logger->info("Logger initialized successfully");
             s_logger->info("Log level: {}", log_level);
-            s_logger->info("Console output: {}", 
+            s_logger->info("Console output: {}",
 #ifdef M3_ENABLE_CONSOLE_LOG
-                "Enabled"
+                           "Enabled"
 #else
-                "Disabled"
+                           "Disabled"
 #endif
             );
             s_logger->info("Log file: {}", oss.str());

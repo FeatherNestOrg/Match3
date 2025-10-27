@@ -5,6 +5,10 @@ add_executable(${PROJECT_NAME}
         Render/Renderer.cpp
         Render/Texture.cpp
         Render/ResourceManager.cpp
+        Game/Gem.cpp
+        Game/Board.cpp
+        Game/MatchDetector.cpp
+        Game/GameState.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src")
