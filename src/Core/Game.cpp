@@ -36,11 +36,21 @@ namespace Match3
     {
         LOG_INFO("Initializing Match-3 Game...");
 
-        // 初始化 SDL
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
+        // 初始化 SDL (音频是可选的)
+        if (!SDL_Init(SDL_INIT_VIDEO))
         {
             LOG_ERROR("SDL initialization failed: {}", SDL_GetError());
             return false;
+        }
+
+        // 尝试初始化音频（不强制要求）
+        if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
+        {
+            LOG_WARN("Audio initialization failed: {} - continuing without audio", SDL_GetError());
+        }
+        else
+        {
+            LOG_INFO("Audio initialized successfully");
         }
 
         // 创建窗口
