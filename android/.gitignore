@@ -1,0 +1,36 @@
+# Gradle files
+.gradle/
+build/
+*.gradle.lock
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Generated files
+bin/
+gen/
+out/
+
+# Android Studio
+.idea/
+*.iml
+*.apk
+*.ap_
+*.dex
+*.class
+*.jar
+
+# Keystore files
+*.jks
+*.keystore
+
+# Gradle wrapper
+!gradle/wrapper/gradle-wrapper.jar
+
+# Build directories
+/build
+/app/build
+
+# OS files
+.DS_Store
+Thumbs.db
