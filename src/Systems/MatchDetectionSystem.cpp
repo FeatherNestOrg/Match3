@@ -4,20 +4,21 @@
 
 namespace Match3::Systems
 {
-    MatchDetectionSystem::MatchDetectionSystem(BoardSystem& boardSystem)
+    MatchDetectionSystem::MatchDetectionSystem(BoardSystem &boardSystem)
         : m_boardSystem(boardSystem)
     {
     }
 
-    void MatchDetectionSystem::Update(entt::registry& registry, float deltaTime)
+    void MatchDetectionSystem::Update(entt::registry &registry, float deltaTime)
     {
-        if (!m_enabled) return;
+        if (!m_enabled)
+            return;
 
         // MatchDetectionSystem主要提供检测接口
         // 实际的检测由GameStateManager在需要时调用
     }
 
-    std::vector<MatchGroup> MatchDetectionSystem::DetectMatches(entt::registry& registry)
+    std::vector<MatchGroup> MatchDetectionSystem::DetectMatches(entt::registry &registry)
     {
         std::vector<MatchGroup> matches;
 
@@ -32,14 +33,15 @@ namespace Match3::Systems
             LOG_DEBUG("{}: Detected {} match groups with {} total gems",
                       GetName(), matches.size(),
                       std::accumulate(matches.begin(), matches.end(), 0,
-                          [](int sum, const MatchGroup& m) { return sum + m.gems.size(); }));
+                                      [](int sum, const MatchGroup &m)
+                                      { return sum + m.gems.size(); }));
         }
 
         return matches;
     }
 
-    void MatchDetectionSystem::DetectHorizontalMatches(entt::registry& registry,
-                                                       std::vector<MatchGroup>& matches)
+    void MatchDetectionSystem::DetectHorizontalMatches(entt::registry &registry,
+                                                       std::vector<MatchGroup> &matches)
     {
         const int rows = m_boardSystem.GetRows();
         const int cols = m_boardSystem.GetCols();
@@ -96,8 +98,8 @@ namespace Match3::Systems
         }
     }
 
-    void MatchDetectionSystem::DetectVerticalMatches(entt::registry& registry,
-                                                     std::vector<MatchGroup>& matches)
+    void MatchDetectionSystem::DetectVerticalMatches(entt::registry &registry,
+                                                     std::vector<MatchGroup> &matches)
     {
         const int rows = m_boardSystem.GetRows();
         const int cols = m_boardSystem.GetCols();
@@ -154,23 +156,25 @@ namespace Match3::Systems
         }
     }
 
-    void MatchDetectionSystem::MarkMatches(entt::registry& registry,
-                                           const std::vector<MatchGroup>& matches)
+    void MatchDetectionSystem::MarkMatches(entt::registry &registry,
+                                           const std::vector<MatchGroup> &matches)
     {
         int totalGems = 0;
 
-        for (const auto& match : matches)
+        for (const auto &match : matches)
         {
             for (auto entity : match.gems)
             {
                 // 添加Matched组件（使用emplace_or_replace避免崩溃）
-                registry.emplace_or_replace<Components::Matched>(entity, match.matchId,
-                                                                 static_cast<int>(match.gems.size()));
+                registry.emplace_or_replace<Components::Matched>(
+                    entity,
+                    static_cast<int>(match.matchId),
+                    static_cast<int>(match.gems.size()));
 
                 // 更新Gem状态
                 if (registry.all_of<Components::Gem>(entity))
                 {
-                    auto& gem = registry.get<Components::Gem>(entity);
+                    auto &gem = registry.get<Components::Gem>(entity);
                     gem.state = Components::GemState::Matched;
                 }
 
@@ -184,14 +188,14 @@ namespace Match3::Systems
         }
     }
 
-    void MatchDetectionSystem::ClearMatchMarks(entt::registry& registry)
+    void MatchDetectionSystem::ClearMatchMarks(entt::registry &registry)
     {
         // 移除所有Matched组件
         auto view = registry.view<Components::Matched>();
         registry.destroy(view.begin(), view.end());
     }
 
-    bool MatchDetectionSystem::CanMatch(entt::registry& registry, entt::entity entity) const
+    bool MatchDetectionSystem::CanMatch(entt::registry &registry, entt::entity entity) const
     {
         if (!registry.valid(entity))
         {
@@ -203,11 +207,11 @@ namespace Match3::Systems
             return false;
         }
 
-        const auto& gem = registry.get<Components::Gem>(entity);
+        const auto &gem = registry.get<Components::Gem>(entity);
         return gem.canMatch && !gem.IsEmpty();
     }
 
-    Components::GemType MatchDetectionSystem::GetGemType(entt::registry& registry,
+    Components::GemType MatchDetectionSystem::GetGemType(entt::registry &registry,
                                                          entt::entity entity) const
     {
         if (!registry.all_of<Components::Gem>(entity))
