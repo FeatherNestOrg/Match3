@@ -16,7 +16,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE M3_LOG_LEVEL="${LOG_LEVEL}")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
         SDL3::SDL3
-        SDL3_image::SDL3_image
         unordered_dense::unordered_dense
         spdlog
         fmt
