@@ -240,16 +240,34 @@ namespace Match3
                                 Config::BOARD_OFFSET_X + Config::BOARD_COLS * Config::GEM_SIZE, y);
         }
 
-        // 绘制示例宝石（圆形）- 演示不同颜色
-        for (int i = 0; i < Config::GEM_TYPES && i < Config::BOARD_COLS; ++i)
+        // 绘制示例宝石网格 - 展示所有颜色的宝石
+        for (int row = 0; row < Config::BOARD_ROWS; ++row)
         {
-            const auto& color = Config::GEM_COLORS[i];
-            const int x = Config::BOARD_OFFSET_X + i * Config::GEM_SIZE + Config::GEM_SIZE / 2;
-            const int y = Config::BOARD_OFFSET_Y + Config::GEM_SIZE / 2;
-            const int radius = Config::GEM_SIZE / 2 - 4; // 留一点边距
+            for (int col = 0; col < Config::BOARD_COLS; ++col)
+            {
+                // 使用行列索引计算宝石类型（循环使用颜色）
+                const int gemType = (row * Config::BOARD_COLS + col) % Config::GEM_TYPES;
+                const auto& color = Config::GEM_COLORS[gemType];
 
-            m_renderer->SetDrawColor(color.r, color.g, color.b, color.a);
-            m_renderer->FillCircle(x, y, radius);
+                const int centerX = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE + Config::GEM_SIZE / 2;
+                const int centerY = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE + Config::GEM_SIZE / 2;
+                const int radius = Config::GEM_SIZE / 2 - 4; // 留一点边距
+
+                // 绘制实心圆（宝石主体）
+                m_renderer->SetDrawColor(color.r, color.g, color.b, color.a);
+                m_renderer->FillCircle(centerX, centerY, radius);
+
+                // 绘制圆形边框（增加视觉效果）
+                m_renderer->SetDrawColor(255, 255, 255, 180);
+                m_renderer->DrawCircle(centerX, centerY, radius);
+
+                // 添加高光效果（小白圆）
+                const int highlightRadius = radius / 3;
+                const int highlightX = centerX - radius / 3;
+                const int highlightY = centerY - radius / 3;
+                m_renderer->SetDrawColor(255, 255, 255, 150);
+                m_renderer->FillCircle(highlightX, highlightY, highlightRadius);
+            }
         }
 
         // 显示渲染结果
