@@ -38,18 +38,16 @@ jobs:
             libegl1-mesa-dev libibus-1.0-dev libdbus-1-dev
 
       # Windows - setup vcpkg
-      - name: Setup vcpkg (Windows)
+      - name: Setup CMake (Windows)
         if: runner.os == 'Windows'
-        run: |
-          choco install cmake --no-progress -y
-          refreshenv
+        uses: jwlawson/actions-setup-cmake@v2
 
       - name: Install vcpkg packages (Windows)
         if: runner.os == 'Windows'
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
-          pkgs: sdl3 sdl3-image spdlog fmt
+          manifest-dir: ${{ github.workspace }}
           triplet: x64-windows-static
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -60,15 +58,17 @@ jobs:
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_CONSOLE_LOG=ON \
-            -DLOG_LEVEL=INFO
+            -DLOG_LEVEL=INFO \
+
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
         run: |
-          cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} \
+          cmake ${{ steps.vcpkg.outputs.vcpkg-cmake-config }} `
             -S . -B build `
-            -DENABLE_CONSOLE_LOG=ON`
-            -DLOG_LEVEL=INFO
+            -DENABLE_CONSOLE_LOG=ON `
+            -DLOG_LEVEL=INFO `
+            -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       - name: Build
         run: cmake --build build --config Release

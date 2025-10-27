@@ -94,16 +94,14 @@ jobs:
           path: ${{ github.workspace }}/vcpkg
           key: ${{ runner.os }}-vcpkgcmd
 
-      - name: Setup Environment
-        run: |
-          choco install cmake --no-progress -y
-          refreshenv
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
 
       - name: vcpkg build
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
-          pkgs: sdl3 sdl3-image spdlog fmt
+          manifest-dir: ${{ github.workspace }}
           triplet: x64-windows-static
           token: ${{ secrets.GITHUB_TOKEN }}
 
