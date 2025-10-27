@@ -45,6 +45,7 @@ jobs:
             libibus-1.0-dev \
             libdbus-1-dev \
             libspdlog-dev \
+            libfreetype-dev \
 
       - name: Configure CMake
         run: |
@@ -103,7 +104,7 @@ jobs:
         uses: johnwason/vcpkg-action@v7
         id: vcpkg
         with:
-          pkgs: sdl3 sdl3-image
+          pkgs: sdl3 sdl3-image sdl3-ttf
           triplet: x64-windows-static
           token: ${{ secrets.GITHUB_TOKEN }}
         env:
@@ -298,8 +299,6 @@ jobs:
               fi
             else
               echo "⚠ Warning: Artifact directory not found: $artifact_dir"
-            fi
-          done
             fi
           done
 
