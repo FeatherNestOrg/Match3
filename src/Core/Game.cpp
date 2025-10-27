@@ -94,17 +94,17 @@ namespace Match3
         }
 
         // 加载字体
-        if (!m_fontRenderer->LoadFont("resources/fonts/Roboto-Regular.ttf", 24, "default"))
+        if (!m_fontRenderer->LoadFont("resources/fonts/ZCOOLKuaiLe-Regular.ttf", 24, "default"))
         {
             LOG_ERROR("Failed to load default font");
             return false;
         }
-        if (!m_fontRenderer->LoadFont("resources/fonts/Roboto-Bold.ttf", 32, "title"))
+        if (!m_fontRenderer->LoadFont("resources/fonts/ZCOOLKuaiLe-Regular.ttf", 32, "title"))
         {
             LOG_ERROR("Failed to load title font");
             return false;
         }
-        if (!m_fontRenderer->LoadFont("resources/fonts/Roboto-Regular.ttf", 18, "small"))
+        if (!m_fontRenderer->LoadFont("resources/fonts/ZCOOLKuaiLe-Regular.ttf", 18, "small"))
         {
             LOG_ERROR("Failed to load small font");
             return false;
@@ -433,7 +433,7 @@ namespace Match3
         m_uiManager->AddComponent(titlePanel);
 
         // Create a title label
-        auto titleLabel = std::make_shared<Label>(m_windowWidth / 2, 24, "Match-3 UI Demo", "title");
+        auto titleLabel = std::make_shared<Label>(m_windowWidth / 2, 24, "消消乐！", "title");
         titleLabel->SetColor(255, 255, 255, 255);
         titleLabel->SetAlignment(TextAlign::Center);
         titleLabel->SetFontRenderer(m_fontRenderer.get());
@@ -447,40 +447,44 @@ namespace Match3
         int buttonSpacing = 60;
 
         // Start button
-        auto startButton = std::make_shared<Button>(buttonX, buttonY, 200, 50, "Start Game", "default");
+        auto startButton = std::make_shared<Button>(buttonX, buttonY, 200, 50, "开始游戏", "default");
         startButton->SetNormalColor(60, 120, 60, 255);
         startButton->SetHoverColor(80, 150, 80, 255);
         startButton->SetPressedColor(40, 100, 40, 255);
         startButton->SetFontRenderer(m_fontRenderer.get());
         startButton->SetId("start_button");
         startButton->SetZOrder(2);
-        startButton->SetOnClick([this]() {
+        startButton->SetOnClick([this]()
+        {
             LOG_INFO("Start Game button clicked!");
         });
         m_uiManager->AddComponent(startButton);
 
         // Settings button
-        auto settingsButton = std::make_shared<Button>(buttonX, buttonY + buttonSpacing, 200, 50, "Settings", "default");
+        auto settingsButton = std::make_shared<
+            Button>(buttonX, buttonY + buttonSpacing, 200, 50, "设置", "default");
         settingsButton->SetNormalColor(80, 80, 120, 255);
         settingsButton->SetHoverColor(100, 100, 150, 255);
         settingsButton->SetPressedColor(60, 60, 100, 255);
         settingsButton->SetFontRenderer(m_fontRenderer.get());
         settingsButton->SetId("settings_button");
         settingsButton->SetZOrder(2);
-        settingsButton->SetOnClick([this]() {
+        settingsButton->SetOnClick([this]()
+        {
             LOG_INFO("Settings button clicked!");
         });
         m_uiManager->AddComponent(settingsButton);
 
         // Exit button
-        auto exitButton = std::make_shared<Button>(buttonX, buttonY + buttonSpacing * 2, 200, 50, "Exit", "default");
+        auto exitButton = std::make_shared<Button>(buttonX, buttonY + buttonSpacing * 2, 200, 50, "退出", "default");
         exitButton->SetNormalColor(120, 60, 60, 255);
         exitButton->SetHoverColor(150, 80, 80, 255);
         exitButton->SetPressedColor(100, 40, 40, 255);
         exitButton->SetFontRenderer(m_fontRenderer.get());
         exitButton->SetId("exit_button");
         exitButton->SetZOrder(2);
-        exitButton->SetOnClick([this]() {
+        exitButton->SetOnClick([this]()
+        {
             LOG_INFO("Exit button clicked!");
             m_isRunning = false;
         });
@@ -496,8 +500,8 @@ namespace Match3
         m_uiManager->AddComponent(infoPanel);
 
         // Create info label
-        auto infoLabel = std::make_shared<Label>(20, m_windowHeight - 40, 
-            "SDL_ttf UI System - Press ESC to exit | SPACE to pause", "small");
+        auto infoLabel = std::make_shared<Label>(20, m_windowHeight - 40,
+                                                 "测试 UI - ESC 退出 | SPACE 暂停", "small");
         infoLabel->SetColor(200, 200, 200, 255);
         infoLabel->SetFontRenderer(m_fontRenderer.get());
         infoLabel->SetId("info_label");

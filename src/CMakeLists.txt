@@ -20,6 +20,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 # ============================================================================
+# Copy resources to build directory for development
+# ============================================================================
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/resources"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/resources"
+        COMMENT "Copying resources to build directory..."
+)
+
+# ============================================================================
 # Installation configuration
 # ============================================================================
 

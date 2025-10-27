@@ -5,7 +5,7 @@ namespace Match3
 {
     FontRenderer::FontRenderer(SDL_Renderer* sdlRenderer)
         : m_sdlRenderer(sdlRenderer)
-        , m_initialized(false)
+          , m_initialized(false)
     {
     }
 
@@ -22,7 +22,7 @@ namespace Match3
             return true;
         }
 
-        if (TTF_Init() != 0)
+        if (!TTF_Init())
         {
             LOG_ERROR("Failed to initialize SDL_ttf: {}", SDL_GetError());
             return false;
@@ -97,20 +97,20 @@ namespace Match3
         // Calculate position based on alignment
         int textWidth = surface->w;
         int textHeight = surface->h;
-        
+
         int renderX = x;
         switch (align)
         {
-            case TextAlign::Center:
-                renderX = x - textWidth / 2;
-                break;
-            case TextAlign::Right:
-                renderX = x - textWidth;
-                break;
-            case TextAlign::Left:
-            default:
-                renderX = x;
-                break;
+        case TextAlign::Center:
+            renderX = x - textWidth / 2;
+            break;
+        case TextAlign::Right:
+            renderX = x - textWidth;
+            break;
+        case TextAlign::Left:
+        default:
+            renderX = x;
+            break;
         }
 
         // Render texture
@@ -120,7 +120,7 @@ namespace Match3
             static_cast<float>(textWidth),
             static_cast<float>(textHeight)
         };
-        
+
         SDL_RenderTexture(m_sdlRenderer, texture, nullptr, &destRect);
 
         // Cleanup
@@ -142,7 +142,7 @@ namespace Match3
 
         int width = 0;
         int height = 0;
-        if (TTF_GetStringSize(it->second, text.c_str(), text.length(), &width, &height) != 0)
+        if (!TTF_GetStringSize(it->second, text.c_str(), text.length(), &width, &height))
         {
             LOG_ERROR("Failed to measure text: {}", SDL_GetError());
             return -1;

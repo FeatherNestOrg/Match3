@@ -164,8 +164,8 @@ namespace Match3::Systems
             for (auto entity : match.gems)
             {
                 // 添加Matched组件（使用emplace_or_replace避免崩溃）
-                registry.emplace_or_replace<Components::Matched>(entity, match.matchId,
-                                                                 static_cast<int>(match.gems.size()));
+                const int gemCount = static_cast<int>(match.gems.size());
+                registry.emplace_or_replace<Components::Matched>(entity, match.matchId, gemCount);
 
                 // 更新Gem状态
                 if (registry.all_of<Components::Gem>(entity))
