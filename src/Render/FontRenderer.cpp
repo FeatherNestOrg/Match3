@@ -22,7 +22,7 @@ namespace Match3
             return true;
         }
 
-        if (!TTF_Init())
+        if (TTF_Init() != 0)
         {
             LOG_ERROR("Failed to initialize SDL_ttf: {}", SDL_GetError());
             return false;
@@ -142,7 +142,7 @@ namespace Match3
 
         int width = 0;
         int height = 0;
-        if (!TTF_GetStringSize(it->second, text.c_str(), text.length(), &width, &height))
+        if (TTF_GetStringSize(it->second, text.c_str(), text.length(), &width, &height) != 0)
         {
             LOG_ERROR("Failed to measure text: {}", SDL_GetError());
             return -1;

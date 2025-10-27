@@ -117,7 +117,8 @@ namespace Match3
             // Trigger callback
             if (m_onClick)
             {
-                LOG_DEBUG("Button '{}' clicked", m_id);
+                std::string id = m_id.empty() ? m_text : m_id;
+                LOG_DEBUG("Button '{}' clicked", id);
                 m_onClick();
             }
             return true;
