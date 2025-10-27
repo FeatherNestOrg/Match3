@@ -260,20 +260,51 @@ jobs:
             artifact_dir="artifacts/match-3-android-${abi}-Release-logINFO"
             if [ -d "$artifact_dir" ]; then
               echo "Processing $abi..."
-              # Find the tarball
-              tar_file=$(find "$artifact_dir" -name "*.tar.gz" -type f)
-              if [ -f "$tar_file" ]; then
+              
+              # Find the tarball (more reliable method)
+              tar_file=""
+              for f in "$artifact_dir"/*.tar.gz; do
+                if [ -f "$f" ]; then
+                  tar_file="$f"
+                  break
+                fi
+              done
+              
+              if [ -n "$tar_file" ]; then
                 echo "Found tarball: $tar_file"
-                # Extract and copy .so file
-                tar xzf "$tar_file" -C /tmp/
-                find /tmp -name "libMatch3.so" -exec cp {} android/app/src/main/jniLibs/$abi/ \;
+                
+                # Create temporary extraction directory
+                extract_dir=$(mktemp -d)
+                trap "rm -rf $extract_dir" EXIT
+                
+                # Extract the tarball to temp directory
+                tar xzf "$tar_file" -C "$extract_dir"
+                
+                # Find and copy the .so file directly from extracted content
+                so_file=$(find "$extract_dir" -type f -name "libMatch3.so" 2>/dev/null | head -1)
+                if [ -n "$so_file" ] && [ -f "$so_file" ]; then
+                  echo "Found libMatch3.so: $so_file"
+                  cp "$so_file" "android/app/src/main/jniLibs/$abi/libMatch3.so"
+                  echo "✓ Copied to android/app/src/main/jniLibs/$abi/libMatch3.so"
+                else
+                  echo "⚠ Warning: libMatch3.so not found in tarball"
+                fi
+              else
+                echo "⚠ Warning: No .tar.gz file found in $artifact_dir"
               fi
+            else
+              echo "⚠ Warning: Artifact directory not found: $artifact_dir"
             fi
           done
 
           # List prepared libraries
-          echo "Prepared native libraries:"
-          find android/app/src/main/jniLibs -name "*.so" -type f
+          echo ""
+          echo "=== Prepared native libraries ==="
+          if [ $(find android/app/src/main/jniLibs -type f -name "*.so" | wc -l) -gt 0 ]; then
+            find android/app/src/main/jniLibs -type f -name "*.so"
+          else
+            echo "⚠ Warning: No .so files found in jniLibs!"
+          fi
 
       - name: Copy game assets to Android
         run: |
