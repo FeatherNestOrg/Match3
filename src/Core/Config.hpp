@@ -53,6 +53,12 @@ namespace Match3
         inline constexpr GemColor BG_COLOR = {20, 20, 30, 255};
         inline constexpr GemColor GRID_COLOR = {60, 60, 80, 255};
         inline constexpr GemColor SELECTED_COLOR = {255, 255, 255, 200};
+
+        // 宝石渲染效果
+        inline constexpr GemColor GEM_BORDER_COLOR = {255, 255, 255, 180}; // 宝石边框颜色
+        inline constexpr GemColor GEM_HIGHLIGHT_COLOR = {255, 255, 255, 150}; // 宝石高光颜色
+        inline constexpr int GEM_MARGIN = 4; // 宝石与格子边缘的边距
+        inline constexpr int GEM_HIGHLIGHT_OFFSET_DIVISOR = 3; // 高光偏移除数（相对于半径）
     } // namespace Config
 } // namespace Match3
 

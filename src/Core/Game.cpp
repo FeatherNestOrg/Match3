@@ -251,21 +251,24 @@ namespace Match3
 
                 const int centerX = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE + Config::GEM_SIZE / 2;
                 const int centerY = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE + Config::GEM_SIZE / 2;
-                const int radius = Config::GEM_SIZE / 2 - 4; // 留一点边距
+                const int radius = Config::GEM_SIZE / 2 - Config::GEM_MARGIN;
 
                 // 绘制实心圆（宝石主体）
                 m_renderer->SetDrawColor(color.r, color.g, color.b, color.a);
                 m_renderer->FillCircle(centerX, centerY, radius);
 
                 // 绘制圆形边框（增加视觉效果）
-                m_renderer->SetDrawColor(255, 255, 255, 180);
+                const auto& borderColor = Config::GEM_BORDER_COLOR;
+                m_renderer->SetDrawColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a);
                 m_renderer->DrawCircle(centerX, centerY, radius);
 
                 // 添加高光效果（小白圆）
-                const int highlightRadius = radius / 3;
-                const int highlightX = centerX - radius / 3;
-                const int highlightY = centerY - radius / 3;
-                m_renderer->SetDrawColor(255, 255, 255, 150);
+                const int highlightOffset = radius / Config::GEM_HIGHLIGHT_OFFSET_DIVISOR;
+                const int highlightRadius = highlightOffset;
+                const int highlightX = centerX - highlightOffset;
+                const int highlightY = centerY - highlightOffset;
+                const auto& highlightColor = Config::GEM_HIGHLIGHT_COLOR;
+                m_renderer->SetDrawColor(highlightColor.r, highlightColor.g, highlightColor.b, highlightColor.a);
                 m_renderer->FillCircle(highlightX, highlightY, highlightRadius);
             }
         }
