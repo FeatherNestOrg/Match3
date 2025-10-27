@@ -62,7 +62,6 @@ namespace Match3
          */
         void UpdateFPS(float deltaTime);
 
-    private:
         std::string m_title;
         int m_windowWidth;
         int m_windowHeight;

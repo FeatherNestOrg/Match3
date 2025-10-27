@@ -1,5 +1,7 @@
 #pragma once
 
+#define FMT_HEADER_ONLY
+#define SPDLOG_FMT_EXTERNAL
 #include <spdlog/spdlog.h>
 #include <memory>
 
