@@ -121,10 +121,7 @@ namespace Match3
         // 创建主菜单场景
         m_sceneManager->ChangeScene(
             std::make_unique<MenuScene>(m_renderer.get(), m_fontRenderer.get(),
-                                       m_sceneManager.get(), m_windowWidth, m_windowHeight));
-
-        // 设置输入回调
-        SetupInputCallbacks();
+                                        m_sceneManager.get(), m_windowWidth, m_windowHeight));
 
         m_isRunning = true;
         LOG_INFO("Game initialized successfully!");
@@ -307,7 +304,7 @@ namespace Match3
         if (m_sceneManager)
         {
             m_sceneManager->Update(deltaTime);
-            
+
             // 如果场景栈为空，退出游戏
             if (m_sceneManager->IsEmpty())
             {
@@ -324,12 +321,6 @@ namespace Match3
         {
             m_sceneManager->Render();
         }
-    }
-
-    void Game::SetupInputCallbacks()
-    {
-        // Input callbacks are now handled by the SceneManager and individual scenes
-        // This method is kept for compatibility but is no longer needed
     }
 
     void Game::UpdateFPS(float deltaTime)

@@ -18,12 +18,12 @@ namespace Match3
     GameScene::GameScene(Renderer* renderer, FontRenderer* fontRenderer,
                          SceneManager* sceneManager, int windowWidth, int windowHeight)
         : m_renderer(renderer)
-        , m_fontRenderer(fontRenderer)
-        , m_sceneManager(sceneManager)
-        , m_gameState(std::make_unique<GameStateManager>(renderer))
-        , m_uiManager(std::make_unique<UIManager>())
-        , m_windowWidth(windowWidth)
-        , m_windowHeight(windowHeight)
+          , m_fontRenderer(fontRenderer)
+          , m_sceneManager(sceneManager)
+          , m_gameState(std::make_unique<GameStateManager>(renderer))
+          , m_uiManager(std::make_unique<UIManager>())
+          , m_windowWidth(windowWidth)
+          , m_windowHeight(windowHeight)
     {
         m_uiManager->SetFontRenderer(m_fontRenderer);
     }
@@ -33,10 +33,10 @@ namespace Match3
     void GameScene::OnEnter()
     {
         LOG_INFO("GameScene: Entering");
-        
+
         // 初始化游戏状态
         m_gameState->Initialize(Config::BOARD_ROWS, Config::BOARD_COLS, Config::GEM_TYPES);
-        
+
         CreateGameUI();
     }
 
@@ -66,18 +66,18 @@ namespace Match3
     {
         // 清空屏幕
         m_renderer->Clear(Config::BG_COLOR.r, Config::BG_COLOR.g,
-                         Config::BG_COLOR.b, Config::BG_COLOR.a);
+                          Config::BG_COLOR.b, Config::BG_COLOR.a);
 
         // 绘制棋盘网格
         m_renderer->SetDrawColor(Config::GRID_COLOR.r, Config::GRID_COLOR.g,
-                                Config::GRID_COLOR.b, Config::GRID_COLOR.a);
+                                 Config::GRID_COLOR.b, Config::GRID_COLOR.a);
 
         // 绘制垂直线
         for (int col = 0; col <= Config::BOARD_COLS; ++col)
         {
             const int x = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE;
             m_renderer->DrawLine(x, Config::BOARD_OFFSET_Y,
-                                x, Config::BOARD_OFFSET_Y + Config::BOARD_ROWS * Config::GEM_SIZE);
+                                 x, Config::BOARD_OFFSET_Y + Config::BOARD_ROWS * Config::GEM_SIZE);
         }
 
         // 绘制水平线
@@ -85,7 +85,7 @@ namespace Match3
         {
             const int y = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE;
             m_renderer->DrawLine(Config::BOARD_OFFSET_X, y,
-                                Config::BOARD_OFFSET_X + Config::BOARD_COLS * Config::GEM_SIZE, y);
+                                 Config::BOARD_OFFSET_X + Config::BOARD_COLS * Config::GEM_SIZE, y);
         }
 
         // 渲染游戏内容
@@ -126,7 +126,7 @@ namespace Match3
     {
         if (m_uiManager)
         {
-            m_uiManager->HandleMouseMove(x, y);
+            return m_uiManager->HandleMouseMove(x, y);
         }
         return false;
     }
@@ -135,18 +135,22 @@ namespace Match3
     {
         if (m_uiManager)
         {
-            m_uiManager->HandleMouseDown(x, y);
+            return m_uiManager->HandleMouseDown(x, y);
         }
         return false;
     }
 
     bool GameScene::HandleMouseUp(int x, int y)
     {
-        if (m_uiManager)
+        // First, let UI handle the event
+        if (m_uiManager && m_uiManager->HandleMouseUp(x, y))
         {
-            m_uiManager->HandleMouseUp(x, y);
+            // UI consumed the event
+            return true;
         }
-        return false;
+
+        // UI didn't consume the event, check if it's a board click
+        return HandleMouseClick(x, y);
     }
 
     bool GameScene::HandleKeyPress(int key)
@@ -156,7 +160,7 @@ namespace Match3
             LOG_INFO("ESC pressed in game - returning to menu");
             m_sceneManager->ChangeScene(
                 std::make_unique<MenuScene>(m_renderer, m_fontRenderer,
-                                           m_sceneManager, m_windowWidth, m_windowHeight));
+                                            m_sceneManager, m_windowWidth, m_windowHeight));
             return true;
         }
         else if (key == SDLK_R)
@@ -203,7 +207,7 @@ namespace Match3
             LOG_INFO("Menu button clicked - returning to menu");
             m_sceneManager->ChangeScene(
                 std::make_unique<MenuScene>(m_renderer, m_fontRenderer,
-                                           m_sceneManager, m_windowWidth, m_windowHeight));
+                                            m_sceneManager, m_windowWidth, m_windowHeight));
         });
         m_uiManager->AddComponent(menuButton);
 

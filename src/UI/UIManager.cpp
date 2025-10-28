@@ -1,4 +1,6 @@
 #include "UIManager.hpp"
+
+#include <ranges>
 #include "Render/Renderer.hpp"
 
 namespace Match3
@@ -21,20 +23,22 @@ namespace Match3
     {
         m_components.erase(
             std::remove_if(m_components.begin(), m_components.end(),
-                [&id](const std::shared_ptr<UIComponent>& comp) {
-                    return comp->GetId() == id;
-                }),
+                           [&id](const std::shared_ptr<UIComponent>& comp)
+                           {
+                               return comp->GetId() == id;
+                           }),
             m_components.end()
         );
     }
 
     std::shared_ptr<UIComponent> UIManager::GetComponent(const std::string& id)
     {
-        auto it = std::find_if(m_components.begin(), m_components.end(),
-            [&id](const std::shared_ptr<UIComponent>& comp) {
-                return comp->GetId() == id;
-            });
-        
+        const auto it = std::ranges::find_if(m_components,
+                                             [&id](const std::shared_ptr<UIComponent>& comp)
+                                             {
+                                                 return comp->GetId() == id;
+                                             });
+
         return (it != m_components.end()) ? *it : nullptr;
     }
 
@@ -43,7 +47,7 @@ namespace Match3
         m_components.clear();
     }
 
-    void UIManager::Update(float deltaTime)
+    void UIManager::Update(const float deltaTime)
     {
         for (auto& component : m_components)
         {
@@ -66,62 +70,63 @@ namespace Match3
         }
     }
 
-    void UIManager::HandleMouseMove(int mouseX, int mouseY)
+    bool UIManager::HandleMouseMove(int mouseX, int mouseY)
     {
         // Process in reverse order (top to bottom)
-        for (auto it = m_components.rbegin(); it != m_components.rend(); ++it)
+        for (auto& component : std::ranges::reverse_view(m_components))
         {
-            auto& component = *it;
             if (component->IsVisible() && component->IsEnabled())
             {
                 if (component->HandleMouseMove(mouseX, mouseY))
                 {
                     // Event consumed
-                    break;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
-    void UIManager::HandleMouseDown(int mouseX, int mouseY)
+    bool UIManager::HandleMouseDown(int mouseX, int mouseY)
     {
         // Process in reverse order (top to bottom)
-        for (auto it = m_components.rbegin(); it != m_components.rend(); ++it)
+        for (auto& component : std::ranges::reverse_view(m_components))
         {
-            auto& component = *it;
             if (component->IsVisible() && component->IsEnabled())
             {
                 if (component->HandleMouseDown(mouseX, mouseY))
                 {
                     // Event consumed
-                    break;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
-    void UIManager::HandleMouseUp(int mouseX, int mouseY)
+    bool UIManager::HandleMouseUp(int mouseX, int mouseY)
     {
         // Process in reverse order (top to bottom)
-        for (auto it = m_components.rbegin(); it != m_components.rend(); ++it)
+        for (auto& component : std::ranges::reverse_view(m_components))
         {
-            auto& component = *it;
             if (component->IsVisible() && component->IsEnabled())
             {
                 if (component->HandleMouseUp(mouseX, mouseY))
                 {
                     // Event consumed
-                    break;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     void UIManager::SortComponents()
     {
-        std::sort(m_components.begin(), m_components.end(),
-            [](const std::shared_ptr<UIComponent>& a, const std::shared_ptr<UIComponent>& b) {
-                return a->GetZOrder() < b->GetZOrder();
-            });
+        std::ranges::sort(m_components,
+                          [](const std::shared_ptr<UIComponent>& a, const std::shared_ptr<UIComponent>& b)
+                          {
+                              return a->GetZOrder() < b->GetZOrder();
+                          });
     }
 } // namespace Match3

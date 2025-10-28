@@ -73,11 +73,6 @@ namespace Match3
          */
         bool InitializeRenderResources();
 
-        /**
-         * @brief 设置输入回调
-         */
-        void SetupInputCallbacks();
-
     private:
         std::string m_title;
         int m_windowWidth;
