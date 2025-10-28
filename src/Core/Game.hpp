@@ -12,6 +12,11 @@ namespace Match3
     class FontRenderer;
     class SceneManager;
 
+    namespace Display
+    {
+        class DisplayManager;
+    }
+
     /**
      * @brief 游戏主类 - 负责游戏循环和核心系统管理
      */
@@ -86,6 +91,7 @@ namespace Match3
         std::unique_ptr<InputManager> m_inputManager;
         std::unique_ptr<FontRenderer> m_fontRenderer;
         std::unique_ptr<SceneManager> m_sceneManager;
+        std::unique_ptr<Display::DisplayManager> m_displayManager;
 
         bool m_isRunning;
         bool m_isPaused;

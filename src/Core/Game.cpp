@@ -7,6 +7,7 @@
 #include "Input/InputManager.hpp"
 #include "Scenes/SceneManager.hpp"
 #include "Scenes/MenuScene.hpp"
+#include "Display/DisplayManager.hpp"
 #include <SDL3/SDL_timer.h>
 
 #include <utility>
@@ -77,6 +78,18 @@ namespace Match3
         m_inputManager = std::make_unique<InputManager>();
 
         m_resourceManager = std::make_unique<ResourceManager>(m_sdlRenderer);
+
+        // 初始化显示管理器
+        LOG_INFO("Initializing DisplayManager");
+        m_displayManager = std::make_unique<Display::DisplayManager>(m_window, m_sdlRenderer);
+        if (!m_displayManager->Initialize())
+        {
+            LOG_ERROR("Failed to initialize DisplayManager");
+            return false;
+        }
+
+        // 尝试加载显示设置
+        m_displayManager->LoadDisplaySettings();
 
         // 初始化渲染资源
         if (!InitializeRenderResources())
@@ -205,8 +218,15 @@ namespace Match3
     {
         LOG_INFO("Shutting down game...");
 
+        // 保存显示设置
+        if (m_displayManager)
+        {
+            m_displayManager->SaveDisplaySettings();
+        }
+
         m_sceneManager.reset();
         m_fontRenderer.reset();
+        m_displayManager.reset();
         m_inputManager.reset();
         m_resourceManager.reset();
         m_renderer.reset();
@@ -247,9 +267,28 @@ namespace Match3
                 break;
 
             case SDL_EVENT_WINDOW_RESIZED:
+            case SDL_EVENT_WINDOW_MAXIMIZED:
+            case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
                 m_windowWidth = event.window.data1;
                 m_windowHeight = event.window.data2;
                 LOG_INFO("Window resized: {}x{}", m_windowWidth, m_windowHeight);
+                
+                // 传递给 DisplayManager 处理
+                if (m_displayManager)
+                {
+                    m_displayManager->HandleWindowEvent(event.window);
+                }
+                break;
+
+            case SDL_EVENT_DISPLAY_ORIENTATION:
+            case SDL_EVENT_DISPLAY_ADDED:
+            case SDL_EVENT_DISPLAY_REMOVED:
+            case SDL_EVENT_DISPLAY_MOVED:
+                // 传递给 DisplayManager 处理
+                if (m_displayManager)
+                {
+                    m_displayManager->HandleDisplayChangeEvent(event.display);
+                }
                 break;
 
             case SDL_EVENT_KEY_DOWN:
@@ -260,29 +299,35 @@ namespace Match3
                 break;
 
             case SDL_EVENT_MOUSE_MOTION:
-                if (m_sceneManager)
+                if (m_sceneManager && m_displayManager)
                 {
-                    m_sceneManager->HandleMouseMove(
+                    // 转换坐标到游戏坐标系
+                    auto [gameX, gameY] = m_displayManager->WindowToGameCoords(
                         static_cast<int>(event.motion.x),
                         static_cast<int>(event.motion.y));
+                    m_sceneManager->HandleMouseMove(gameX, gameY);
                 }
                 break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager)
+                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager && m_displayManager)
                 {
-                    m_sceneManager->HandleMouseDown(
+                    // 转换坐标到游戏坐标系
+                    auto [gameX, gameY] = m_displayManager->WindowToGameCoords(
                         static_cast<int>(event.button.x),
                         static_cast<int>(event.button.y));
+                    m_sceneManager->HandleMouseDown(gameX, gameY);
                 }
                 break;
 
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager)
+                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager && m_displayManager)
                 {
-                    m_sceneManager->HandleMouseUp(
+                    // 转换坐标到游戏坐标系
+                    auto [gameX, gameY] = m_displayManager->WindowToGameCoords(
                         static_cast<int>(event.button.x),
                         static_cast<int>(event.button.y));
+                    m_sceneManager->HandleMouseUp(gameX, gameY);
                 }
                 break;
 
