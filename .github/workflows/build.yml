@@ -242,11 +242,6 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
 
       - name: Download all Android artifacts
         uses: actions/download-artifact@v4
