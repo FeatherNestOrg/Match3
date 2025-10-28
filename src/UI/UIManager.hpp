@@ -51,18 +51,21 @@ namespace Match3
 
         /**
          * @brief Handle mouse move event
+         * @return true if event was consumed by a UI component
          */
-        void HandleMouseMove(int mouseX, int mouseY);
+        bool HandleMouseMove(int mouseX, int mouseY);
 
         /**
          * @brief Handle mouse button down event
+         * @return true if event was consumed by a UI component
          */
-        void HandleMouseDown(int mouseX, int mouseY);
+        bool HandleMouseDown(int mouseX, int mouseY);
 
         /**
          * @brief Handle mouse button up event
+         * @return true if event was consumed by a UI component
          */
-        void HandleMouseUp(int mouseX, int mouseY);
+        bool HandleMouseUp(int mouseX, int mouseY);
 
         /**
          * @brief Set font renderer for UI components

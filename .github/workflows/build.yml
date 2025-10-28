@@ -2,9 +2,9 @@ name: Multi-Platform Build
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 env:
@@ -19,9 +19,9 @@ jobs:
 
     strategy:
       matrix:
-        build_type: [Release]
-        log_level: [INFO]
-        console_log: [OFF]
+        build_type: [ Release ]
+        log_level: [ INFO ]
+        console_log: [ OFF ]
 
     steps:
       - name: Checkout code
@@ -81,9 +81,9 @@ jobs:
 
     strategy:
       matrix:
-        build_type: [Release]
-        log_level: [INFO]
-        console_log: [OFF]
+        build_type: [ Release ]
+        log_level: [ INFO ]
+        console_log: [ OFF ]
 
     steps:
       - name: Checkout code
@@ -143,9 +143,9 @@ jobs:
 
     strategy:
       matrix:
-        build_type: [Release]
-        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
-        log_level: [INFO]
+        build_type: [ Release ]
+        abi: [ armeabi-v7a, arm64-v8a, x86, x86_64 ]
+        log_level: [ INFO ]
 
     steps:
       - name: Checkout code
@@ -242,16 +242,6 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools-version: "34.0.0"
-
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: "8.4"
 
       - name: Download all Android artifacts
         uses: actions/download-artifact@v4
@@ -347,7 +337,7 @@ jobs:
   # Create Release (on tags)
   # ============================================================================
   create-release:
-    needs: [build-linux, build-windows, build-android, build-android-apk]
+    needs: [ build-linux, build-windows, build-android, build-android-apk ]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 

@@ -4,13 +4,9 @@
 #include "Render/Renderer.hpp"
 #include "Render/ResourceManager.hpp"
 #include "Render/FontRenderer.hpp"
-#include "Managers/GameStateManager.hpp"
 #include "Input/InputManager.hpp"
-#include "Input/MouseHandler.hpp"
-#include "UI/UIManager.hpp"
-#include "UI/Components/Label.hpp"
-#include "UI/Components/Button.hpp"
-#include "UI/Components/Panel.hpp"
+#include "Scenes/SceneManager.hpp"
+#include "Scenes/MenuScene.hpp"
 #include <SDL3/SDL_timer.h>
 
 #include <utility>
@@ -40,11 +36,21 @@ namespace Match3
     {
         LOG_INFO("Initializing Match-3 Game...");
 
-        // 初始化 SDL
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
+        // 初始化 SDL (音频是可选的)
+        if (!SDL_Init(SDL_INIT_VIDEO))
         {
             LOG_ERROR("SDL initialization failed: {}", SDL_GetError());
             return false;
+        }
+
+        // 尝试初始化音频（不强制要求）
+        if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0)
+        {
+            LOG_WARN("Audio initialization failed: {} - continuing without audio", SDL_GetError());
+        }
+        else
+        {
+            LOG_INFO("Audio initialized successfully");
         }
 
         // 创建窗口
@@ -80,9 +86,8 @@ namespace Match3
         }
 
         // 创建游戏状态管理器
-        LOG_INFO("Initializing GameStateManager");
-        m_gameState = std::make_unique<GameStateManager>(m_renderer.get());
-        m_gameState->Initialize(Config::BOARD_ROWS, Config::BOARD_COLS, Config::GEM_TYPES);
+        LOG_INFO("Initializing SceneManager");
+        m_sceneManager = std::make_unique<SceneManager>();
 
         // 初始化 UI 系统
         LOG_INFO("Initializing UI system");
@@ -111,14 +116,12 @@ namespace Match3
         }
 
         // 创建 UI 管理器
-        m_uiManager = std::make_unique<UIManager>();
-        m_uiManager->SetFontRenderer(m_fontRenderer.get());
+        // (现在由场景管理)
 
-        // 创建示例 UI
-        CreateDemoUI();
-
-        // 设置输入回调
-        SetupInputCallbacks();
+        // 创建主菜单场景
+        m_sceneManager->ChangeScene(
+            std::make_unique<MenuScene>(m_renderer.get(), m_fontRenderer.get(),
+                                        m_sceneManager.get(), m_windowWidth, m_windowHeight));
 
         m_isRunning = true;
         LOG_INFO("Game initialized successfully!");
@@ -202,9 +205,8 @@ namespace Match3
     {
         LOG_INFO("Shutting down game...");
 
-        m_uiManager.reset();
+        m_sceneManager.reset();
         m_fontRenderer.reset();
-        m_gameState.reset();
         m_inputManager.reset();
         m_resourceManager.reset();
         m_renderer.reset();
@@ -236,37 +238,6 @@ namespace Match3
                 m_inputManager->HandleEvent(event);
             }
 
-            // 传递事件给 UI 管理器
-            if (m_uiManager)
-            {
-                switch (event.type)
-                {
-                case SDL_EVENT_MOUSE_MOTION:
-                    m_uiManager->HandleMouseMove(
-                        static_cast<int>(event.motion.x),
-                        static_cast<int>(event.motion.y));
-                    break;
-                case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                    if (event.button.button == SDL_BUTTON_LEFT)
-                    {
-                        m_uiManager->HandleMouseDown(
-                            static_cast<int>(event.button.x),
-                            static_cast<int>(event.button.y));
-                    }
-                    break;
-                case SDL_EVENT_MOUSE_BUTTON_UP:
-                    if (event.button.button == SDL_BUTTON_LEFT)
-                    {
-                        m_uiManager->HandleMouseUp(
-                            static_cast<int>(event.button.x),
-                            static_cast<int>(event.button.y));
-                    }
-                    break;
-                default:
-                    break;
-                }
-            }
-
             // 处理系统事件
             switch (event.type)
             {
@@ -279,6 +250,40 @@ namespace Match3
                 m_windowWidth = event.window.data1;
                 m_windowHeight = event.window.data2;
                 LOG_INFO("Window resized: {}x{}", m_windowWidth, m_windowHeight);
+                break;
+
+            case SDL_EVENT_KEY_DOWN:
+                if (m_sceneManager)
+                {
+                    m_sceneManager->HandleKeyPress(event.key.key);
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_MOTION:
+                if (m_sceneManager)
+                {
+                    m_sceneManager->HandleMouseMove(
+                        static_cast<int>(event.motion.x),
+                        static_cast<int>(event.motion.y));
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager)
+                {
+                    m_sceneManager->HandleMouseDown(
+                        static_cast<int>(event.button.x),
+                        static_cast<int>(event.button.y));
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager)
+                {
+                    m_sceneManager->HandleMouseUp(
+                        static_cast<int>(event.button.x),
+                        static_cast<int>(event.button.y));
+                }
                 break;
 
             default:
@@ -295,110 +300,27 @@ namespace Match3
             m_inputManager->Update();
         }
 
-        // 更新 UI
-        if (m_uiManager)
+        // 更新场景管理器
+        if (m_sceneManager)
         {
-            m_uiManager->Update(deltaTime);
-        }
+            m_sceneManager->Update(deltaTime);
 
-        // 更新游戏状态管理器
-        if (m_gameState)
-        {
-            m_gameState->Update(deltaTime);
+            // 如果场景栈为空，退出游戏
+            if (m_sceneManager->IsEmpty())
+            {
+                LOG_INFO("Scene stack is empty - exiting game");
+                m_isRunning = false;
+            }
         }
     }
 
     void Game::Render()
     {
-        // 清空屏幕（使用配置中定义的背景色）
-        m_renderer->Clear(Config::BG_COLOR.r, Config::BG_COLOR.g,
-                          Config::BG_COLOR.b, Config::BG_COLOR.a);
-
-        // 绘制棋盘网格
-        m_renderer->SetDrawColor(Config::GRID_COLOR.r, Config::GRID_COLOR.g,
-                                 Config::GRID_COLOR.b, Config::GRID_COLOR.a);
-
-        // 绘制垂直线
-        for (int col = 0; col <= Config::BOARD_COLS; ++col)
+        // 场景会自己处理清屏和渲染
+        if (m_sceneManager)
         {
-            const int x = Config::BOARD_OFFSET_X + col * Config::GEM_SIZE;
-            m_renderer->DrawLine(x, Config::BOARD_OFFSET_Y,
-                                 x, Config::BOARD_OFFSET_Y + Config::BOARD_ROWS * Config::GEM_SIZE);
+            m_sceneManager->Render();
         }
-
-        // 绘制水平线
-        for (int row = 0; row <= Config::BOARD_ROWS; ++row)
-        {
-            const int y = Config::BOARD_OFFSET_Y + row * Config::GEM_SIZE;
-            m_renderer->DrawLine(Config::BOARD_OFFSET_X, y,
-                                 Config::BOARD_OFFSET_X + Config::BOARD_COLS * Config::GEM_SIZE, y);
-        }
-
-        // 渲染游戏内容（宝石等）
-        if (m_gameState)
-        {
-            m_gameState->Render();
-        }
-
-        // 渲染 UI
-        if (m_uiManager)
-        {
-            m_uiManager->Render(m_renderer.get());
-        }
-
-        // 显示渲染结果
-        m_renderer->Present();
-    }
-
-    void Game::SetupInputCallbacks()
-    {
-        // 设置鼠标点击回调
-        m_inputManager->SetMouseClickCallback(
-            [this](const int x, const int y, const InputManager::MouseButton button)
-            {
-                if (button == InputManager::MouseButton::Left && !m_isPaused)
-                {
-                    // 使用 MouseHandler 转换坐标
-                    auto boardPos = MouseHandler::ScreenToBoard(x, y);
-                    if (boardPos.has_value())
-                    {
-                        auto [row, col] = boardPos.value();
-                        LOG_DEBUG("Click at board position: ({}, {})", row, col);
-
-                        // 将点击传递给游戏状态管理器
-                        if (m_gameState)
-                        {
-                            m_gameState->HandleClick(row, col);
-                        }
-                    }
-                }
-            });
-
-        // 设置键盘按下回调
-        m_inputManager->SetKeyDownCallback(
-            [this](SDL_Keycode key)
-            {
-                if (key == SDLK_ESCAPE)
-                {
-                    LOG_INFO("ESC pressed - exiting game");
-                    m_isRunning = false;
-                }
-                else if (key == SDLK_SPACE)
-                {
-                    m_isPaused = !m_isPaused;
-                    LOG_INFO("Game {}", m_isPaused ? "paused" : "resumed");
-                }
-                else if (key == SDLK_R)
-                {
-                    LOG_INFO("Restarting game...");
-                }
-                else if (key == SDLK_H)
-                {
-                    // 显示提示
-                    LOG_INFO("Hint requested");
-                    // TODO: 实现提示功能
-                }
-            });
     }
 
     void Game::UpdateFPS(float deltaTime)
@@ -417,98 +339,6 @@ namespace Match3
             m_frameTimeAccumulator = 0.0f;
             m_frameCount = 0;
         }
-    }
-
-    void Game::CreateDemoUI()
-    {
-        LOG_INFO("Creating demo UI...");
-
-        // Create a title panel at the top
-        auto titlePanel = std::make_shared<Panel>(0, 0, m_windowWidth, 80);
-        titlePanel->SetColor(40, 40, 60, 255);
-        titlePanel->SetBorderEnabled(true);
-        titlePanel->SetBorderColor(100, 100, 150, 255);
-        titlePanel->SetId("title_panel");
-        titlePanel->SetZOrder(0);
-        m_uiManager->AddComponent(titlePanel);
-
-        // Create a title label
-        auto titleLabel = std::make_shared<Label>(m_windowWidth / 2, 24, "消消乐！", "title");
-        titleLabel->SetColor(255, 255, 255, 255);
-        titleLabel->SetAlignment(TextAlign::Center);
-        titleLabel->SetFontRenderer(m_fontRenderer.get());
-        titleLabel->SetId("title_label");
-        titleLabel->SetZOrder(1);
-        m_uiManager->AddComponent(titleLabel);
-
-        // Create some buttons on the right side
-        int buttonX = m_windowWidth - 220;
-        int buttonY = 120;
-        int buttonSpacing = 60;
-
-        // Start button
-        auto startButton = std::make_shared<Button>(buttonX, buttonY, 200, 50, "开始游戏", "default");
-        startButton->SetNormalColor(60, 120, 60, 255);
-        startButton->SetHoverColor(80, 150, 80, 255);
-        startButton->SetPressedColor(40, 100, 40, 255);
-        startButton->SetFontRenderer(m_fontRenderer.get());
-        startButton->SetId("start_button");
-        startButton->SetZOrder(2);
-        startButton->SetOnClick([this]()
-        {
-            LOG_INFO("Start Game button clicked!");
-        });
-        m_uiManager->AddComponent(startButton);
-
-        // Settings button
-        auto settingsButton = std::make_shared<
-            Button>(buttonX, buttonY + buttonSpacing, 200, 50, "设置", "default");
-        settingsButton->SetNormalColor(80, 80, 120, 255);
-        settingsButton->SetHoverColor(100, 100, 150, 255);
-        settingsButton->SetPressedColor(60, 60, 100, 255);
-        settingsButton->SetFontRenderer(m_fontRenderer.get());
-        settingsButton->SetId("settings_button");
-        settingsButton->SetZOrder(2);
-        settingsButton->SetOnClick([this]()
-        {
-            LOG_INFO("Settings button clicked!");
-        });
-        m_uiManager->AddComponent(settingsButton);
-
-        // Exit button
-        auto exitButton = std::make_shared<Button>(buttonX, buttonY + buttonSpacing * 2, 200, 50, "退出", "default");
-        exitButton->SetNormalColor(120, 60, 60, 255);
-        exitButton->SetHoverColor(150, 80, 80, 255);
-        exitButton->SetPressedColor(100, 40, 40, 255);
-        exitButton->SetFontRenderer(m_fontRenderer.get());
-        exitButton->SetId("exit_button");
-        exitButton->SetZOrder(2);
-        exitButton->SetOnClick([this]()
-        {
-            LOG_INFO("Exit button clicked!");
-            m_isRunning = false;
-        });
-        m_uiManager->AddComponent(exitButton);
-
-        // Create an info panel at the bottom
-        auto infoPanel = std::make_shared<Panel>(0, m_windowHeight - 60, m_windowWidth, 60);
-        infoPanel->SetColor(40, 40, 60, 255);
-        infoPanel->SetBorderEnabled(true);
-        infoPanel->SetBorderColor(100, 100, 150, 255);
-        infoPanel->SetId("info_panel");
-        infoPanel->SetZOrder(0);
-        m_uiManager->AddComponent(infoPanel);
-
-        // Create info label
-        auto infoLabel = std::make_shared<Label>(20, m_windowHeight - 40,
-                                                 "测试 UI - ESC 退出 | SPACE 暂停", "small");
-        infoLabel->SetColor(200, 200, 200, 255);
-        infoLabel->SetFontRenderer(m_fontRenderer.get());
-        infoLabel->SetId("info_label");
-        infoLabel->SetZOrder(1);
-        m_uiManager->AddComponent(infoLabel);
-
-        LOG_INFO("Demo UI created successfully");
     }
 } // namespace Match3
 
