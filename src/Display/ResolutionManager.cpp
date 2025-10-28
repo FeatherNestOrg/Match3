@@ -1,4 +1,5 @@
 #include "ResolutionManager.hpp"
+#include "PlatformDisplay.hpp"
 #include "Core/Logger.hpp"
 #include <cmath>
 #include <limits>
@@ -225,6 +226,16 @@ namespace Match3::Display
 
         LOG_WARN("Failed to get display bounds: {}", SDL_GetError());
         return {1920, 1080};
+    }
+
+    std::pair<int, int> ResolutionManager::GetUsableScreenSize()
+    {
+        return PlatformDisplay::GetUsableScreenSize();
+    }
+
+    bool ResolutionManager::IsMobileDevice()
+    {
+        return PlatformDisplay::IsMobileDevice();
     }
 
     void ResolutionManager::RefreshDisplayModes()

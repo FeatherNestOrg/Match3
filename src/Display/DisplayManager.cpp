@@ -1,4 +1,5 @@
 #include "DisplayManager.hpp"
+#include "PlatformDisplay.hpp"
 #include "Core/Logger.hpp"
 #include <filesystem>
 
@@ -26,6 +27,25 @@ namespace Match3::Display
         m_resolutionManager = std::make_unique<ResolutionManager>(m_window);
         m_viewportManager = std::make_unique<ViewportManager>();
         m_displaySettings = std::make_unique<DisplaySettings>();
+
+        // 检测平台信息
+        if (PlatformDisplay::IsMobileDevice())
+        {
+            LOG_INFO("Running on mobile device");
+            auto [width, height] = PlatformDisplay::GetUsableScreenSize();
+            LOG_INFO("Usable screen size: {}x{}", width, height);
+            LOG_INFO("Device DPI: {}", PlatformDisplay::GetDeviceDPI());
+            LOG_INFO("Density category: {}", PlatformDisplay::GetDensityCategory());
+            
+            // 获取安全区域
+            SDL_Rect safeArea = PlatformDisplay::GetSafeArea();
+            LOG_INFO("Safe area: x={}, y={}, w={}, h={}", 
+                     safeArea.x, safeArea.y, safeArea.w, safeArea.h);
+        }
+        else
+        {
+            LOG_INFO("Running on desktop device");
+        }
 
         // 更新当前显示信息
         UpdateDisplayInfo();

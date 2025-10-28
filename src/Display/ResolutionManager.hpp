@@ -89,6 +89,19 @@ namespace Match3::Display
          */
         std::pair<int, int> GetDisplayBounds();
 
+        /**
+         * @brief 获取平台特定的可用屏幕尺寸（Android 适配）
+         * 在移动设备上会考虑系统栏、导航栏等
+         * @return 宽度和高度
+         */
+        std::pair<int, int> GetUsableScreenSize();
+
+        /**
+         * @brief 检查是否为移动设备
+         * @return 移动设备返回 true
+         */
+        bool IsMobileDevice();
+
     private:
         SDL_Window* m_window;
         std::vector<const SDL_DisplayMode*> m_displayModes;
