@@ -279,6 +279,12 @@ namespace Match3
                 {
                     m_displayManager->HandleWindowEvent(event.window);
                 }
+                
+                // 通知场景管理器窗口大小变化
+                if (m_sceneManager)
+                {
+                    m_sceneManager->NotifyWindowResize(m_windowWidth, m_windowHeight);
+                }
                 break;
 
             case SDL_EVENT_DISPLAY_ORIENTATION:

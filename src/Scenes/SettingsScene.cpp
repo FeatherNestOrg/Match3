@@ -25,6 +25,7 @@ namespace Match3
         , m_windowHeight(windowHeight)
         , m_currentDisplayModeIndex(0)
         , m_currentScalingStrategyIndex(0)
+        , m_currentResolutionIndex(0)
         , m_settingsChanged(false)
     {
         m_uiManager->SetFontRenderer(m_fontRenderer);
@@ -44,6 +45,22 @@ namespace Match3
             
             auto currentStrategy = m_displayManager->GetScalingStrategy();
             m_currentScalingStrategyIndex = static_cast<int>(currentStrategy);
+            
+            // Get available resolutions
+            m_availableResolutions = m_displayManager->GetAvailableResolutions();
+            
+            // Find current resolution index
+            auto displayInfo = m_displayManager->GetDisplayInfo();
+            m_currentResolutionIndex = 0;
+            for (size_t i = 0; i < m_availableResolutions.size(); ++i)
+            {
+                if (m_availableResolutions[i].width == displayInfo.windowWidth &&
+                    m_availableResolutions[i].height == displayInfo.windowHeight)
+                {
+                    m_currentResolutionIndex = static_cast<int>(i);
+                    break;
+                }
+            }
         }
         
         CreateSettingsUI();
@@ -265,6 +282,77 @@ namespace Match3
 
         yOffset += rowSpacing;
 
+        // Resolution label and buttons
+        auto resolutionLabel = std::make_shared<Label>(labelX, yOffset + 15, "分辨率:", "default");
+        resolutionLabel->SetColor(180, 180, 180, 255);
+        resolutionLabel->SetAlignment(TextAlign::Left);
+        resolutionLabel->SetFontRenderer(m_fontRenderer);
+        resolutionLabel->SetId("resolution_label");
+        resolutionLabel->SetZOrder(1);
+        m_uiManager->AddComponent(resolutionLabel);
+
+        // Get current resolution text
+        std::string currentResolutionText = "800x600";
+        if (!m_availableResolutions.empty() && m_currentResolutionIndex < static_cast<int>(m_availableResolutions.size()))
+        {
+            auto& res = m_availableResolutions[m_currentResolutionIndex];
+            if (res.label)
+            {
+                currentResolutionText = res.label;
+            }
+            else
+            {
+                char buffer[64];
+                snprintf(buffer, sizeof(buffer), "%dx%d", res.width, res.height);
+                currentResolutionText = buffer;
+            }
+        }
+
+        auto resolutionButton = std::make_shared<Button>(
+            buttonX, yOffset, buttonWidth, buttonHeight, currentResolutionText, "default");
+        resolutionButton->SetNormalColor(60, 80, 120, 255);
+        resolutionButton->SetHoverColor(80, 100, 140, 255);
+        resolutionButton->SetPressedColor(40, 60, 100, 255);
+        resolutionButton->SetFontRenderer(m_fontRenderer);
+        resolutionButton->SetId("resolution_button");
+        resolutionButton->SetZOrder(2);
+        resolutionButton->SetOnClick([this, resolutionButton]()
+        {
+            if (m_availableResolutions.empty())
+            {
+                return;
+            }
+            
+            // Cycle through available resolutions
+            m_currentResolutionIndex = (m_currentResolutionIndex + 1) % static_cast<int>(m_availableResolutions.size());
+            auto& res = m_availableResolutions[m_currentResolutionIndex];
+            
+            // Update button text
+            std::string resText;
+            if (res.label)
+            {
+                resText = res.label;
+            }
+            else
+            {
+                char buffer[64];
+                snprintf(buffer, sizeof(buffer), "%dx%d", res.width, res.height);
+                resText = buffer;
+            }
+            resolutionButton->SetText(resText);
+            
+            // Apply immediately
+            if (m_displayManager && m_displayManager->SetResolutionPreset(res))
+            {
+                m_settingsChanged = true;
+                UpdateDisplayInfo();
+                LOG_INFO("Resolution changed to: {}x{}", res.width, res.height);
+            }
+        });
+        m_uiManager->AddComponent(resolutionButton);
+
+        yOffset += rowSpacing;
+
         // Display info label
         auto infoLabel = std::make_shared<Label>(labelX, yOffset, "", "small");
         infoLabel->SetColor(150, 150, 150, 255);
@@ -335,6 +423,37 @@ namespace Match3
         m_displayManager->SaveDisplaySettings();
         m_settingsChanged = false;
         LOG_INFO("Settings applied and saved");
+    }
+
+    void SettingsScene::HandleWindowResize(int width, int height)
+    {
+        LOG_INFO("SettingsScene: Handling window resize to {}x{}", width, height);
+        m_windowWidth = width;
+        m_windowHeight = height;
+        
+        // Recreate UI with new dimensions
+        m_uiManager.reset();
+        m_uiManager = std::make_unique<UIManager>();
+        m_uiManager->SetFontRenderer(m_fontRenderer);
+        
+        // Re-fetch current settings
+        if (m_displayManager)
+        {
+            auto displayInfo = m_displayManager->GetDisplayInfo();
+            // Find current resolution index
+            m_currentResolutionIndex = 0;
+            for (size_t i = 0; i < m_availableResolutions.size(); ++i)
+            {
+                if (m_availableResolutions[i].width == displayInfo.windowWidth &&
+                    m_availableResolutions[i].height == displayInfo.windowHeight)
+                {
+                    m_currentResolutionIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+        }
+        
+        CreateSettingsUI();
     }
 
 } // namespace Match3

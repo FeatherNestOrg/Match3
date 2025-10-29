@@ -36,6 +36,8 @@ namespace Match3
 
         [[nodiscard]] std::string GetName() const override { return "GameScene"; }
 
+        void HandleWindowResize(int width, int height) override;
+
     private:
         void CreateGameUI();
 

@@ -40,6 +40,8 @@ namespace Match3
 
         [[nodiscard]] std::string GetName() const override { return "MenuScene"; }
 
+        void HandleWindowResize(int width, int height) override;
+
     private:
         void CreateMenuUI();
 
