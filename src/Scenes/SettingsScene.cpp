@@ -17,15 +17,15 @@ namespace Match3
                                  SceneManager* sceneManager, Display::DisplayManager* displayManager,
                                  int windowWidth, int windowHeight)
         : m_renderer(renderer)
-        , m_fontRenderer(fontRenderer)
-        , m_sceneManager(sceneManager)
-        , m_displayManager(displayManager)
-        , m_uiManager(std::make_unique<UIManager>())
-        , m_windowWidth(windowWidth)
-        , m_windowHeight(windowHeight)
-        , m_currentDisplayModeIndex(0)
-        , m_currentScalingStrategyIndex(0)
-        , m_settingsChanged(false)
+          , m_fontRenderer(fontRenderer)
+          , m_sceneManager(sceneManager)
+          , m_displayManager(displayManager)
+          , m_uiManager(std::make_unique<UIManager>())
+          , m_windowWidth(windowWidth)
+          , m_windowHeight(windowHeight)
+          , m_currentDisplayModeIndex(0)
+          , m_currentScalingStrategyIndex(0)
+          , m_settingsChanged(false)
     {
         m_uiManager->SetFontRenderer(m_fontRenderer);
     }
@@ -35,31 +35,31 @@ namespace Match3
     void SettingsScene::OnEnter()
     {
         LOG_INFO("SettingsScene: Entering");
-        
+
         // Get current settings from DisplayManager
         if (m_displayManager)
         {
             auto currentMode = m_displayManager->GetCurrentDisplayMode();
             m_currentDisplayModeIndex = static_cast<int>(currentMode);
-            
+
             auto currentStrategy = m_displayManager->GetScalingStrategy();
             m_currentScalingStrategyIndex = static_cast<int>(currentStrategy);
         }
-        
+
         CreateSettingsUI();
     }
 
     void SettingsScene::OnExit()
     {
         LOG_INFO("SettingsScene: Exiting");
-        
+
         // Save settings if changed
         if (m_settingsChanged && m_displayManager)
         {
             LOG_INFO("Saving display settings");
             m_displayManager->SaveDisplaySettings();
         }
-        
+
         m_uiManager.reset();
     }
 
@@ -212,7 +212,7 @@ namespace Match3
             // Cycle through display modes
             m_currentDisplayModeIndex = (m_currentDisplayModeIndex + 1) % 3;
             modeButton->SetText(displayModeNames[m_currentDisplayModeIndex]);
-            
+
             // Apply immediately
             auto newMode = static_cast<Display::DisplayMode>(m_currentDisplayModeIndex);
             if (m_displayManager && m_displayManager->SetDisplayMode(newMode))
@@ -251,7 +251,7 @@ namespace Match3
             // Cycle through scaling strategies
             m_currentScalingStrategyIndex = (m_currentScalingStrategyIndex + 1) % 4;
             scalingButton->SetText(scalingStrategyNames[m_currentScalingStrategyIndex]);
-            
+
             // Apply immediately
             auto newStrategy = static_cast<Display::ScalingStrategy>(m_currentScalingStrategyIndex);
             if (m_displayManager)
@@ -310,13 +310,13 @@ namespace Match3
         }
 
         auto displayInfo = m_displayManager->GetDisplayInfo();
-        
+
         // Update info label
-        auto infoLabel = std::dynamic_pointer_cast<Label>(m_uiManager->GetComponentById("info_label"));
+        auto infoLabel = std::dynamic_pointer_cast<Label>(m_uiManager->GetComponent("info_label"));
         if (infoLabel)
         {
             char buffer[256];
-            snprintf(buffer, sizeof(buffer), 
+            snprintf(buffer, sizeof(buffer),
                      "当前分辨率: %dx%d | DPI 缩放: %.2f",
                      displayInfo.windowWidth, displayInfo.windowHeight, displayInfo.dpiScale);
             infoLabel->SetText(buffer);
@@ -336,5 +336,4 @@ namespace Match3
         m_settingsChanged = false;
         LOG_INFO("Settings applied and saved");
     }
-
 } // namespace Match3

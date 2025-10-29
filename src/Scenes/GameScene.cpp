@@ -11,15 +11,18 @@
 #include "UI/Components/Button.hpp"
 #include "UI/Components/Label.hpp"
 #include "UI/Components/Panel.hpp"
+#include <Display/DisplayManager.hpp>
 #include <SDL3/SDL.h>
 
 namespace Match3
 {
     GameScene::GameScene(Renderer* renderer, FontRenderer* fontRenderer,
-                         SceneManager* sceneManager, int windowWidth, int windowHeight)
+                         SceneManager* sceneManager, Display::DisplayManager* displayManager, int windowWidth,
+                         int windowHeight)
         : m_renderer(renderer)
           , m_fontRenderer(fontRenderer)
           , m_sceneManager(sceneManager)
+          , m_displayManager(displayManager)
           , m_gameState(std::make_unique<GameStateManager>(renderer))
           , m_uiManager(std::make_unique<UIManager>())
           , m_windowWidth(windowWidth)
@@ -160,7 +163,7 @@ namespace Match3
             LOG_INFO("ESC pressed in game - returning to menu");
             m_sceneManager->ChangeScene(
                 std::make_unique<MenuScene>(m_renderer, m_fontRenderer,
-                                            m_sceneManager, m_windowWidth, m_windowHeight));
+                                            m_sceneManager, m_displayManager, m_windowWidth, m_windowHeight));
             return true;
         }
         else if (key == SDLK_R)
@@ -207,7 +210,7 @@ namespace Match3
             LOG_INFO("Menu button clicked - returning to menu");
             m_sceneManager->ChangeScene(
                 std::make_unique<MenuScene>(m_renderer, m_fontRenderer,
-                                            m_sceneManager, m_windowWidth, m_windowHeight));
+                                            m_sceneManager, m_displayManager, m_windowWidth, m_windowHeight));
         });
         m_uiManager->AddComponent(menuButton);
 

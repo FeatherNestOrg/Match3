@@ -19,13 +19,13 @@ namespace Match3
                          SceneManager* sceneManager, Display::DisplayManager* displayManager,
                          int windowWidth, int windowHeight)
         : m_renderer(renderer)
-        , m_fontRenderer(fontRenderer)
-        , m_sceneManager(sceneManager)
-        , m_displayManager(displayManager)
-        , m_uiManager(std::make_unique<UIManager>())
-        , m_windowWidth(windowWidth)
-        , m_windowHeight(windowHeight)
-        , m_shouldExit(false)
+          , m_fontRenderer(fontRenderer)
+          , m_sceneManager(sceneManager)
+          , m_displayManager(displayManager)
+          , m_uiManager(std::make_unique<UIManager>())
+          , m_windowWidth(windowWidth)
+          , m_windowHeight(windowHeight)
+          , m_shouldExit(false)
     {
         m_uiManager->SetFontRenderer(m_fontRenderer);
     }
@@ -165,8 +165,8 @@ namespace Match3
             LOG_INFO("Start Game button clicked - switching to GameScene");
             // 切换到游戏场景
             m_sceneManager->ChangeScene(
-                std::make_unique<GameScene>(m_renderer, m_fontRenderer, 
-                                           m_sceneManager, m_windowWidth, m_windowHeight));
+                std::make_unique<GameScene>(m_renderer, m_fontRenderer,
+                                            m_sceneManager, m_displayManager, m_windowWidth, m_windowHeight));
         });
         m_uiManager->AddComponent(startButton);
 
@@ -184,8 +184,8 @@ namespace Match3
             LOG_INFO("Settings button clicked - opening settings scene");
             m_sceneManager->PushScene(
                 std::make_unique<SettingsScene>(m_renderer, m_fontRenderer,
-                                               m_sceneManager, m_displayManager,
-                                               m_windowWidth, m_windowHeight));
+                                                m_sceneManager, m_displayManager,
+                                                m_windowWidth, m_windowHeight));
         });
         m_uiManager->AddComponent(settingsButton);
 
