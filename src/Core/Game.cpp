@@ -273,13 +273,13 @@ namespace Match3
                 m_windowWidth = event.window.data1;
                 m_windowHeight = event.window.data2;
                 LOG_INFO("Window resized: {}x{}", m_windowWidth, m_windowHeight);
-                
+
                 // 传递给 DisplayManager 处理
                 if (m_displayManager)
                 {
                     m_displayManager->HandleWindowEvent(event.window);
                 }
-                
+
                 // 通知场景管理器窗口大小变化
                 if (m_sceneManager)
                 {
@@ -306,35 +306,33 @@ namespace Match3
                 break;
 
             case SDL_EVENT_MOUSE_MOTION:
-                if (m_sceneManager && m_displayManager)
+                if (m_sceneManager /* && m_displayManager */)
                 {
-                    // 转换坐标到游戏坐标系
-                    auto [gameX, gameY] = m_displayManager->WindowToGameCoords(
-                        static_cast<int>(event.motion.x),
-                        static_cast<int>(event.motion.y));
-                    m_sceneManager->HandleMouseMove(gameX, gameY);
+                    // Previously converted to game coords which caused mismatch between
+                    // UI coordinates (created using window size) and input coordinates
+                    // after resolution/scale changes. Forward raw window coordinates
+                    // (event.motion.x/y) to the scene manager so UI and board hit
+                    // tests use the same coordinate space as rendering/UI creation.
+                    m_sceneManager->HandleMouseMove(static_cast<int>(event.motion.x),
+                                                    static_cast<int>(event.motion.y));
                 }
                 break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager && m_displayManager)
+                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager /* && m_displayManager */)
                 {
-                    // 转换坐标到游戏坐标系
-                    auto [gameX, gameY] = m_displayManager->WindowToGameCoords(
-                        static_cast<int>(event.button.x),
-                        static_cast<int>(event.button.y));
-                    m_sceneManager->HandleMouseDown(gameX, gameY);
+                    // Forward raw window coordinates to scene manager
+                    m_sceneManager->HandleMouseDown(static_cast<int>(event.button.x),
+                                                    static_cast<int>(event.button.y));
                 }
                 break;
 
             case SDL_EVENT_MOUSE_BUTTON_UP:
-                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager && m_displayManager)
+                if (event.button.button == SDL_BUTTON_LEFT && m_sceneManager /* && m_displayManager */)
                 {
-                    // 转换坐标到游戏坐标系
-                    auto [gameX, gameY] = m_displayManager->WindowToGameCoords(
-                        static_cast<int>(event.button.x),
-                        static_cast<int>(event.button.y));
-                    m_sceneManager->HandleMouseUp(gameX, gameY);
+                    // Forward raw window coordinates to scene manager
+                    m_sceneManager->HandleMouseUp(static_cast<int>(event.button.x),
+                                                  static_cast<int>(event.button.y));
                 }
                 break;
 

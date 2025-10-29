@@ -2,6 +2,7 @@
 
 #include "Scene.hpp"
 #include <memory>
+#include <vector>
 
 namespace Match3
 {
@@ -12,6 +13,7 @@ namespace Match3
 
     namespace Display
     {
+        struct Resolution;
         class DisplayManager;
     }
 
@@ -24,8 +26,8 @@ namespace Match3
     {
     public:
         SettingsScene(Renderer* renderer, FontRenderer* fontRenderer,
-                     SceneManager* sceneManager, Display::DisplayManager* displayManager,
-                     int windowWidth, int windowHeight);
+                      SceneManager* sceneManager, Display::DisplayManager* displayManager,
+                      int windowWidth, int windowHeight);
         ~SettingsScene() override;
 
         void OnEnter() override;
