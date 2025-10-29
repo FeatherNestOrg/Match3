@@ -63,47 +63,6 @@ namespace Match3::Display
     private:
         Settings m_settings;
         std::string m_configFilePath;
-
-        /**
-         * @brief 序列化为 JSON 字符串
-         * @return JSON 字符串
-         */
-        std::string SerializeToJSON() const;
-
-        /**
-         * @brief 从 JSON 字符串反序列化
-         * @param json JSON 字符串
-         * @return 成功返回 true
-         */
-        bool DeserializeFromJSON(const std::string& json);
-
-        /**
-         * @brief 将 DisplayMode 转换为字符串
-         * @param mode 显示模式
-         * @return 模式字符串
-         */
-        static std::string DisplayModeToString(DisplayMode mode);
-
-        /**
-         * @brief 从字符串转换为 DisplayMode
-         * @param str 字符串
-         * @return 显示模式
-         */
-        static DisplayMode StringToDisplayMode(const std::string& str);
-
-        /**
-         * @brief 将 ScalingStrategy 转换为字符串
-         * @param strategy 缩放策略
-         * @return 策略字符串
-         */
-        static std::string ScalingStrategyToString(ScalingStrategy strategy);
-
-        /**
-         * @brief 从字符串转换为 ScalingStrategy
-         * @param str 字符串
-         * @return 缩放策略
-         */
-        static ScalingStrategy StringToScalingStrategy(const std::string& str);
     };
 
 } // namespace Match3::Display
