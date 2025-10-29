@@ -22,6 +22,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         unordered_dense::unordered_dense
         spdlog::spdlog
         EnTT::EnTT
+        nlohmann_json::nlohmann_json
 )
 
 # ============================================================================
