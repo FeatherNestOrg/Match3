@@ -134,7 +134,8 @@ namespace Match3
         // 创建主菜单场景
         m_sceneManager->ChangeScene(
             std::make_unique<MenuScene>(m_renderer.get(), m_fontRenderer.get(),
-                                        m_sceneManager.get(), m_windowWidth, m_windowHeight));
+                                        m_sceneManager.get(), m_displayManager.get(),
+                                        m_windowWidth, m_windowHeight));
 
         m_isRunning = true;
         LOG_INFO("Game initialized successfully!");

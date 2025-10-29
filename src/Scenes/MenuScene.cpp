@@ -1,5 +1,6 @@
 #include "MenuScene.hpp"
 #include "GameScene.hpp"
+#include "SettingsScene.hpp"
 #include "SceneManager.hpp"
 #include "Core/Logger.hpp"
 #include "Core/Config.hpp"
@@ -9,15 +10,18 @@
 #include "UI/Components/Button.hpp"
 #include "UI/Components/Label.hpp"
 #include "UI/Components/Panel.hpp"
+#include "Display/DisplayManager.hpp"
 #include <SDL3/SDL.h>
 
 namespace Match3
 {
     MenuScene::MenuScene(Renderer* renderer, FontRenderer* fontRenderer,
-                         SceneManager* sceneManager, int windowWidth, int windowHeight)
+                         SceneManager* sceneManager, Display::DisplayManager* displayManager,
+                         int windowWidth, int windowHeight)
         : m_renderer(renderer)
         , m_fontRenderer(fontRenderer)
         , m_sceneManager(sceneManager)
+        , m_displayManager(displayManager)
         , m_uiManager(std::make_unique<UIManager>())
         , m_windowWidth(windowWidth)
         , m_windowHeight(windowHeight)
@@ -177,8 +181,11 @@ namespace Match3
         settingsButton->SetZOrder(2);
         settingsButton->SetOnClick([this]()
         {
-            LOG_INFO("Settings button clicked");
-            // TODO: 实现设置场景
+            LOG_INFO("Settings button clicked - opening settings scene");
+            m_sceneManager->PushScene(
+                std::make_unique<SettingsScene>(m_renderer, m_fontRenderer,
+                                               m_sceneManager, m_displayManager,
+                                               m_windowWidth, m_windowHeight));
         });
         m_uiManager->AddComponent(settingsButton);
 
