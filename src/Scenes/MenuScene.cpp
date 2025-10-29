@@ -1,5 +1,6 @@
 #include "MenuScene.hpp"
 #include "GameScene.hpp"
+#include "SettingsScene.hpp"
 #include "SceneManager.hpp"
 #include "Core/Logger.hpp"
 #include "Core/Config.hpp"
@@ -9,19 +10,22 @@
 #include "UI/Components/Button.hpp"
 #include "UI/Components/Label.hpp"
 #include "UI/Components/Panel.hpp"
+#include "Display/DisplayManager.hpp"
 #include <SDL3/SDL.h>
 
 namespace Match3
 {
     MenuScene::MenuScene(Renderer* renderer, FontRenderer* fontRenderer,
-                         SceneManager* sceneManager, int windowWidth, int windowHeight)
+                         SceneManager* sceneManager, Display::DisplayManager* displayManager,
+                         int windowWidth, int windowHeight)
         : m_renderer(renderer)
-        , m_fontRenderer(fontRenderer)
-        , m_sceneManager(sceneManager)
-        , m_uiManager(std::make_unique<UIManager>())
-        , m_windowWidth(windowWidth)
-        , m_windowHeight(windowHeight)
-        , m_shouldExit(false)
+          , m_fontRenderer(fontRenderer)
+          , m_sceneManager(sceneManager)
+          , m_displayManager(displayManager)
+          , m_uiManager(std::make_unique<UIManager>())
+          , m_windowWidth(windowWidth)
+          , m_windowHeight(windowHeight)
+          , m_shouldExit(false)
     {
         m_uiManager->SetFontRenderer(m_fontRenderer);
     }
@@ -161,8 +165,8 @@ namespace Match3
             LOG_INFO("Start Game button clicked - switching to GameScene");
             // 切换到游戏场景
             m_sceneManager->ChangeScene(
-                std::make_unique<GameScene>(m_renderer, m_fontRenderer, 
-                                           m_sceneManager, m_windowWidth, m_windowHeight));
+                std::make_unique<GameScene>(m_renderer, m_fontRenderer,
+                                            m_sceneManager, m_displayManager, m_windowWidth, m_windowHeight));
         });
         m_uiManager->AddComponent(startButton);
 
@@ -177,8 +181,11 @@ namespace Match3
         settingsButton->SetZOrder(2);
         settingsButton->SetOnClick([this]()
         {
-            LOG_INFO("Settings button clicked");
-            // TODO: 实现设置场景
+            LOG_INFO("Settings button clicked - opening settings scene");
+            m_sceneManager->PushScene(
+                std::make_unique<SettingsScene>(m_renderer, m_fontRenderer,
+                                                m_sceneManager, m_displayManager,
+                                                m_windowWidth, m_windowHeight));
         });
         m_uiManager->AddComponent(settingsButton);
 
@@ -218,4 +225,18 @@ namespace Match3
 
         LOG_INFO("MenuScene: Menu UI created successfully");
     }
+
+    void MenuScene::HandleWindowResize(int width, int height)
+    {
+        LOG_INFO("MenuScene: Handling window resize to {}x{}", width, height);
+        m_windowWidth = width;
+        m_windowHeight = height;
+        
+        // Recreate UI with new dimensions
+        m_uiManager.reset();
+        m_uiManager = std::make_unique<UIManager>();
+        m_uiManager->SetFontRenderer(m_fontRenderer);
+        CreateMenuUI();
+    }
+
 } // namespace Match3

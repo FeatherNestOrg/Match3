@@ -2,6 +2,7 @@
 
 #include "Scene.hpp"
 #include <memory>
+#include <vector>
 
 namespace Match3
 {
@@ -12,21 +13,22 @@ namespace Match3
 
     namespace Display
     {
+        struct Resolution;
         class DisplayManager;
     }
 
     /**
-     * @brief 主菜单场景
+     * @brief 设置场景
      * 
-     * 显示游戏标题、开始游戏按钮、设置按钮、退出按钮
+     * 显示游戏设置，包括显示配置、音频等
      */
-    class MenuScene : public Scene
+    class SettingsScene : public Scene
     {
     public:
-        MenuScene(Renderer* renderer, FontRenderer* fontRenderer, 
-                  SceneManager* sceneManager, Display::DisplayManager* displayManager,
-                  int windowWidth, int windowHeight);
-        ~MenuScene() override;
+        SettingsScene(Renderer* renderer, FontRenderer* fontRenderer,
+                      SceneManager* sceneManager, Display::DisplayManager* displayManager,
+                      int windowWidth, int windowHeight);
+        ~SettingsScene() override;
 
         void OnEnter() override;
         void OnExit() override;
@@ -38,12 +40,14 @@ namespace Match3
         bool HandleMouseUp(int x, int y) override;
         bool HandleKeyPress(int key) override;
 
-        [[nodiscard]] std::string GetName() const override { return "MenuScene"; }
+        [[nodiscard]] std::string GetName() const override { return "SettingsScene"; }
 
         void HandleWindowResize(int width, int height) override;
 
     private:
-        void CreateMenuUI();
+        void CreateSettingsUI();
+        void UpdateDisplayInfo();
+        void ApplySettings();
 
         Renderer* m_renderer;
         FontRenderer* m_fontRenderer;
@@ -52,6 +56,12 @@ namespace Match3
         std::unique_ptr<UIManager> m_uiManager;
         int m_windowWidth;
         int m_windowHeight;
-        bool m_shouldExit;
+
+        // Current settings state
+        int m_currentDisplayModeIndex;
+        int m_currentScalingStrategyIndex;
+        int m_currentResolutionIndex;
+        std::vector<Display::Resolution> m_availableResolutions;
+        bool m_settingsChanged;
     };
 } // namespace Match3

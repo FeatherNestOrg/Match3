@@ -151,4 +151,13 @@ namespace Match3
         }
         return nullptr;
     }
+
+    void SceneManager::NotifyWindowResize(int width, int height)
+    {
+        if (!m_sceneStack.empty())
+        {
+            m_sceneStack.top()->HandleWindowResize(width, height);
+        }
+    }
+
 } // namespace Match3

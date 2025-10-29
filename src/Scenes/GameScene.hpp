@@ -3,8 +3,14 @@
 #include "Scene.hpp"
 #include <memory>
 
+
 namespace Match3
 {
+    namespace Display
+    {
+        class DisplayManager;
+    }
+
     class Renderer;
     class UIManager;
     class FontRenderer;
@@ -21,7 +27,8 @@ namespace Match3
     {
     public:
         GameScene(Renderer* renderer, FontRenderer* fontRenderer,
-                  SceneManager* sceneManager, int windowWidth, int windowHeight);
+                  SceneManager* sceneManager, Display::DisplayManager* displayManager, int windowWidth,
+                  int windowHeight);
         ~GameScene() override;
 
         void OnEnter() override;
@@ -36,12 +43,15 @@ namespace Match3
 
         [[nodiscard]] std::string GetName() const override { return "GameScene"; }
 
+        void HandleWindowResize(int width, int height) override;
+
     private:
         void CreateGameUI();
 
         Renderer* m_renderer;
         FontRenderer* m_fontRenderer;
         SceneManager* m_sceneManager;
+        Display::DisplayManager* m_displayManager;
         std::unique_ptr<GameStateManager> m_gameState;
         std::unique_ptr<UIManager> m_uiManager;
         int m_windowWidth;
