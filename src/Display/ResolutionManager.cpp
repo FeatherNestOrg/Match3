@@ -9,8 +9,8 @@ namespace Match3::Display
 {
     ResolutionManager::ResolutionManager(SDL_Window* window)
         : m_window(window)
-        , m_dpiScale(1.0f)
-        , m_currentDisplay(SDL_WINDOWID_INVALID)
+          , m_dpiScale(1.0f)
+          , m_currentDisplay()
     {
         if (m_window)
         {
@@ -23,7 +23,7 @@ namespace Match3::Display
     std::vector<Resolution> ResolutionManager::GetAvailableDisplayModes()
     {
         std::vector<Resolution> resolutions;
-        
+
         if (!m_window)
         {
             LOG_WARN("Window is null, returning preset resolutions only");
@@ -33,8 +33,8 @@ namespace Match3::Display
 
         // 获取显示器支持的所有模式
         int count = 0;
-        const SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(m_currentDisplay, &count);
-        
+        SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(m_currentDisplay, &count);
+
         if (modes && count > 0)
         {
             // 去重并添加到列表
@@ -45,9 +45,9 @@ namespace Match3::Display
                     Resolution res{
                         modes[i]->w,
                         modes[i]->h,
-                        nullptr  // 稍后可以格式化
+                        nullptr // 稍后可以格式化
                     };
-                    
+
                     // 检查是否已存在
                     auto it = std::find(resolutions.begin(), resolutions.end(), res);
                     if (it == resolutions.end())
@@ -68,7 +68,8 @@ namespace Match3::Display
 
         // 按分辨率从小到大排序
         std::sort(resolutions.begin(), resolutions.end(),
-                  [](const Resolution& a, const Resolution& b) {
+                  [](const Resolution& a, const Resolution& b)
+                  {
                       return (a.width * a.height) < (b.width * b.height);
                   });
 
@@ -78,7 +79,7 @@ namespace Match3::Display
     DisplayInfo ResolutionManager::GetCurrentDisplayInfo()
     {
         DisplayInfo info{};
-        
+
         if (!m_window)
         {
             LOG_ERROR("Window is null in GetCurrentDisplayInfo");
@@ -87,7 +88,7 @@ namespace Match3::Display
 
         // 获取窗口尺寸
         SDL_GetWindowSize(m_window, &info.windowWidth, &info.windowHeight);
-        
+
         // 获取渲染器输出尺寸（可能与窗口不同，特别是在高DPI屏幕上）
         SDL_Renderer* renderer = SDL_GetRenderer(m_window);
         if (renderer)
@@ -117,7 +118,7 @@ namespace Match3::Display
         info.dpiScale = m_dpiScale;
 
         // 检测当前显示模式
-        if (SDL_GetWindowFullscreen(m_window))
+        if (SDL_GetWindowFlags(m_window) & SDL_WINDOW_FULLSCREEN)
         {
             info.mode = DisplayMode::FULLSCREEN_EXCLUSIVE;
         }
@@ -139,8 +140,8 @@ namespace Match3::Display
         }
 
         int count = 0;
-        const SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(m_currentDisplay, &count);
-        
+        SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(m_currentDisplay, &count);
+
         if (!modes || count == 0)
         {
             SDL_free(modes);
@@ -156,7 +157,7 @@ namespace Match3::Display
                 break;
             }
         }
-        
+
         SDL_free(modes);
         return found;
     }
@@ -170,7 +171,7 @@ namespace Match3::Display
         {
             float aspect = static_cast<float>(res.width) / static_cast<float>(res.height);
             float diff = std::abs(aspect - targetAspect);
-            
+
             if (diff < minDiff)
             {
                 minDiff = diff;
@@ -246,10 +247,10 @@ namespace Match3::Display
         }
 
         m_currentDisplay = SDL_GetDisplayForWindow(m_window);
-        
+
         int count = 0;
-        const SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(m_currentDisplay, &count);
-        
+        SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(m_currentDisplay, &count);
+
         m_displayModes.clear();
         if (modes && count > 0)
         {
@@ -263,7 +264,7 @@ namespace Match3::Display
             }
             SDL_free(modes);
         }
-        
+
         LOG_INFO("Found {} display modes", m_displayModes.size());
     }
 
@@ -277,7 +278,7 @@ namespace Match3::Display
 
         // SDL3 提供了获取窗口显示缩放的函数
         float scale = SDL_GetWindowDisplayScale(m_window);
-        
+
         if (scale > 0.0f)
         {
             m_dpiScale = scale;
@@ -289,5 +290,4 @@ namespace Match3::Display
             LOG_WARN("Failed to get DPI scale, using default 1.0");
         }
     }
-
 } // namespace Match3::Display

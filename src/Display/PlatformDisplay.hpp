@@ -2,6 +2,7 @@
 
 #include "DisplayMode.hpp"
 #include <utility>
+#include <SDL3/SDL_rect.h>
 
 namespace Match3::Display
 {
@@ -64,5 +65,4 @@ namespace Match3::Display
         static float GetAndroidDPI();
 #endif
     };
-
 } // namespace Match3::Display
