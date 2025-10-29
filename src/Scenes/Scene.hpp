@@ -97,6 +97,13 @@ namespace Match3
          */
         [[nodiscard]] virtual std::string GetName() const = 0;
 
+        /**
+         * @brief 处理窗口大小变化
+         * @param width 新的窗口宽度
+         * @param height 新的窗口高度
+         */
+        virtual void HandleWindowResize(int width, int height) {}
+
     protected:
         Scene() = default;
     };

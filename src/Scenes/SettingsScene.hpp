@@ -40,6 +40,8 @@ namespace Match3
 
         [[nodiscard]] std::string GetName() const override { return "SettingsScene"; }
 
+        void HandleWindowResize(int width, int height) override;
+
     private:
         void CreateSettingsUI();
         void UpdateDisplayInfo();
@@ -56,6 +58,8 @@ namespace Match3
         // Current settings state
         int m_currentDisplayModeIndex;
         int m_currentScalingStrategyIndex;
+        int m_currentResolutionIndex;
+        std::vector<Display::Resolution> m_availableResolutions;
         bool m_settingsChanged;
     };
 } // namespace Match3

@@ -225,4 +225,18 @@ namespace Match3
 
         LOG_INFO("MenuScene: Menu UI created successfully");
     }
+
+    void MenuScene::HandleWindowResize(int width, int height)
+    {
+        LOG_INFO("MenuScene: Handling window resize to {}x{}", width, height);
+        m_windowWidth = width;
+        m_windowHeight = height;
+        
+        // Recreate UI with new dimensions
+        m_uiManager.reset();
+        m_uiManager = std::make_unique<UIManager>();
+        m_uiManager->SetFontRenderer(m_fontRenderer);
+        CreateMenuUI();
+    }
+
 } // namespace Match3

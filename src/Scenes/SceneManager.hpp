@@ -109,6 +109,13 @@ namespace Match3
          */
         [[nodiscard]] Scene* GetCurrentScene() const;
 
+        /**
+         * @brief 通知当前场景窗口大小已改变
+         * @param width 新的窗口宽度
+         * @param height 新的窗口高度
+         */
+        void NotifyWindowResize(int width, int height);
+
     private:
         std::stack<std::unique_ptr<Scene>> m_sceneStack;
     };
